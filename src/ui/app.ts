@@ -10,7 +10,7 @@ import type { GameState, HeroState, Gambit, FloorEvent } from '../core/state';
 import { GAMBIT_CONDS } from '../core/state';
 import * as G from '../core/game';
 import { save, load, clear, exportSave, importSave } from '../core/save';
-import { buildHero, buildAlly, itemOf, canEquip, slotForKind, boardValue, isAlive, gradeMark } from '../core/entity';
+import { buildHero, buildAlly, itemOf, canEquip, slotForKind, boardValue, isAlive, gradeMark, abilityStones, stonesUsed, equipLearns, learnOf } from '../core/entity';
 import type { Combatant } from '../core/entity';
 import { canBuy, buyNode, startFloorOptions, computeTP, trialMult } from '../core/rebirth';
 import { expToNext, abpToNext, equipLevelReq, MAX_JOB_LEVEL } from '../core/formulas';
@@ -23,7 +23,7 @@ import { MONSTERS, areaFor, LAW_TAG_JP, SUPER_BOSSES } from '../data/monsters';
 import { SETS } from '../data/affixes';
 import { activeSets } from '../core/entity';
 import { lawSafeRow, gambitViolates } from '../core/lawhelp';
-import { recommendGambits, describeGambit } from '../core/autogambit';
+import { recommendGambits, describeGambit, AUTO_MODES } from '../core/autogambit';
 import { BOARD, BLESSINGS, TRIALS } from '../data/board';
 import { SKILLS } from '../data/skills';
 import type { Battle } from '../core/battle';
@@ -107,7 +107,8 @@ export class App {
   tabBtns(tabs: string[], cur: string, set: (t: string) => void): HTMLElement[] { return tabs.map(t => btn(t, () => { set(t); this.render(); }, t === cur ? 'sel' : '')); }
   // 画面下から出る選択シート（ドックの上に重なる）
   sheet(title: string, body: Child[], onClose: () => void): HTMLElement {
-    const el = h('div', { class: 'sheet' }, h('div', { class: 'sheet-box' }, h('h2', {}, title), ...body, h('div', { class: 'dock-row' }, h('div', { class: 'dock-nav' }), h('div', { class: 'dock-actions' }, btn('やめる', () => { el.remove(); onClose(); }, 'back')))));
+    const el = h('div', { class: 'sheet' }, h('div', { class: 'sheet-box' }, h('h2', {}, title), h('div', { class: 'sheet-body' }, ...body), h('div', { class: 'dock-row sheet-foot' }, h('div', { class: 'dock-nav' }), h('div', { class: 'dock-actions' }, btn('やめる', () => { el.remove(); onClose(); }, 'back')))));
+    el.addEventListener('click', e => { if (e.target === el) { el.remove(); onClose(); } });
     return el;
   }
   partyBars(): HTMLElement {
@@ -246,12 +247,13 @@ export class App {
   itemLabel(it: ItemInstance, hs?: HeroState): HTMLElement {
     const base = ITEMS[it.base];
     let learnText: HTMLElement | null = null;
-    if (base.learn) {
-      const key = base.learn.ability ?? base.learn.skill!, name = G.learnName(base.learn);
-      const known = hs ? (base.learn.ability ? G.learnedAbilities(this.s!, hs).includes(key) : (hs.learnedSkills.includes(key) || G.hasSkillByJob(hs, key))) : false;
+    const lr = learnOf(it);
+    if (lr) {
+      const key = lr.ability ?? lr.skill!, name = G.learnName(lr);
+      const known = hs ? (lr.ability ? G.learnedAbilities(this.s!, hs).includes(key) : (hs.learnedSkills.includes(key) || G.hasSkillByJob(hs, key))) : false;
       if (hs && known) learnText = h('div', { class: 'good', style: 'font-size:11px' }, `習得済：${name}`);
-      else if (hs) { const ap = hs.itemAp[key] ?? 0; learnText = h('div', { class: 'law', style: 'font-size:11px' }, `習得：${name}　AP ${ap}/${base.learn.ap}`, bar(ap / base.learn.ap, 'limit')); }
-      else learnText = h('div', { class: 'dim', style: 'font-size:11px' }, `習得：${name}（AP${base.learn.ap}）`);
+      else if (hs) { const ap = hs.itemAp[key] ?? 0; learnText = h('div', { class: 'law', style: 'font-size:11px' }, `${name}（装備中は有効）　AP ${ap}/${lr.ap}`, bar(ap / lr.ap, 'limit')); }
+      else learnText = h('div', { class: 'dim', style: 'font-size:11px' }, `アビリティ：${name}（AP${lr.ap}）`);
     }
     const desc = [base.power ? `攻${Math.round(base.power * (1 + 0.02 * Math.max(0, it.found - 1)) * (1 + 0.3 * (it.tier - 1)))}` : '', base.def ? `防${base.def}` : '', base.mdef ? `魔防${base.mdef}` : '', base.element ? `${base.element}属性` : ''].filter(Boolean).join(' ');
     return h('div', { class: 'grow row', style: 'flex-wrap:nowrap;align-items:flex-start' }, iconEl(it.base, 28), h('div', { class: 'grow' },
@@ -296,11 +298,11 @@ export class App {
     const picker = this.heroPicker();
     const hs = s.heroes[this.menuHero];
     const learned = G.learnedAbilities(s, hs);
-    const slots = G.abilitySlots(s);
+    const stones = abilityStones(s, hs); const used = stonesUsed(hs); const eqAb = equipLearns(s, hs).abilities;
     const cslots = G.cmdSlotsFor(s, hs);
     const jobs = G.unlockedJobs(s);
     const jl = hs.jobs[hs.job] ?? { lv: 1, abp: 0 };
-    const apRows = Object.entries(hs.itemAp).map(([key, ap]) => { const it = SLOTS.map(sl => itemOf(s, hs.equip[sl])).find(i => i && (ITEMS[i.base].learn?.ability === key || ITEMS[i.base].learn?.skill === key)); const need = it ? ITEMS[it.base].learn!.ap : 0; return h('div', { class: 'dim', style: 'font-size:12px' }, `${SUPPORTS[key]?.name ?? (SKILLS[key] ? COMMANDS[SKILLS[key].category ?? '']?.name + '「' + SKILLS[key].name + '」' : key)}：AP ${ap}/${need || '?'}`); });
+    const apRows = Object.entries(hs.itemAp).map(([key, ap]) => { const it = SLOTS.map(sl => itemOf(s, hs.equip[sl])).find(i => i && (learnOf(i)?.ability === key || learnOf(i)?.skill === key)); const need = it ? learnOf(it)!.ap : 0; return h('div', { class: 'dim', style: 'font-size:12px' }, `${SUPPORTS[key]?.name ?? (SKILLS[key] ? COMMANDS[SKILLS[key].category ?? '']?.name + '「' + SKILLS[key].name + '」' : key)}：AP ${ap}/${need || '?'}`); });
     return { chips: picker, content: [
       h('div', { class: 'win' }, h('h2', {}, 'ジョブ'), h('div', { class: 'dim' }, `${JOBS[hs.job].name} Lv${jl.lv}${jl.lv >= MAX_JOB_LEVEL ? '（マスター）' : `　ABP ${jl.abp}/${abpToNext(jl.lv)}`}`),
         h('div', { class: 'row' }, ...jobs.map(j => btn(`${JOBS[j].name}${hs.jobs[j] ? ' Lv' + hs.jobs[j].lv : ''}`, () => { const e = G.changeJob(s, hs.id, j); if (e) toast(e); this.render(); }, 'small' + (j === hs.job ? ' sel' : '')))),
@@ -308,10 +310,10 @@ export class App {
         h('div', { class: 'dim', style: 'font-size:12px' }, `サポート習得：${JOBS[hs.job].learn.map(l => `Lv${l.lv} ${SUPPORTS[l.ability]?.name}`).join('、') || 'なし'}`)),
       h('div', { class: 'win' }, h('h2', {}, `コマンド（固有：${JOBS[hs.job].command ? COMMANDS[JOBS[hs.job].command!].name : 'なし'}　枠 ${hs.equippedCmds.length}/${cslots}）`),
         h('div', { class: 'dim', style: 'font-size:11px' }, 'カテゴリをセットすると、そのカテゴリで覚えている技が全部使える。技はそのジョブのLvと装備習得で増える'),
-        h('div', { class: 'list', style: 'max-height:none' }, ...availableCategories(hs).map(cat => {
+        h('div', { class: 'list', style: 'max-height:none' }, ...availableCategories(hs, equipLearns(s, hs).skills).map(cat => {
           const innate = JOBS[hs.job].command === cat;
           const on = innate || hs.equippedCmds.includes(cat);
-          const sks = categorySkills(hs, cat);
+          const sks = categorySkills(hs, cat, equipLearns(s, hs).skills);
           const job = jobOfCommand(cat);
           const total = (job?.unlocks.length ?? 0);
           return h('div', { class: 'item' + (on ? ' sel' : ''), style: 'flex-wrap:wrap' },
@@ -319,8 +321,15 @@ export class App {
               h('div', { class: 'dim', style: 'font-size:11px' }, sks.map(k => k.name).join('、'))),
             innate ? null : btn(on ? '外す' : 'セット', () => { if (on) hs.equippedCmds = hs.equippedCmds.filter(x => x !== cat); else { if (hs.equippedCmds.length >= cslots) { toast('コマンド枠がいっぱい'); return; } hs.equippedCmds.push(cat); } this.render(); }, 'small'));
         }))),
-      h('div', { class: 'win' }, h('h2', {}, `サポート枠（${hs.equipped.length}/${slots}）`),
-        h('div', { class: 'list' }, ...learned.filter(a => !a.startsWith('cmd_')).map(ab => { const on = hs.equipped.includes(ab); return h('div', { class: 'item' + (on ? ' sel' : '') }, h('div', { class: 'grow' }, h('div', {}, SUPPORTS[ab]?.name ?? ab), h('div', { class: 'dim', style: 'font-size:11px' }, SUPPORTS[ab]?.desc ?? '')), btn(on ? '外す' : '装備', () => { if (on) hs.equipped = hs.equipped.filter(x => x !== ab); else { if (hs.equipped.length >= slots) { toast('サポート枠がいっぱい'); return; } hs.equipped.push(ab); } G.syncHp(s, hs); this.render(); }, 'small')); })),
+      h('div', { class: 'win' }, h('h2', {}, `サポートアビリティ　魔石 ${used}/${stones}`),
+        h('div', { class: 'dim', style: 'font-size:11px' }, 'FF9式：各アビリティに魔石コスト。容量はLvと転生ボードで増える。装備中のアイテムが持つアビリティは、未習得でも魔石なしで有効'),
+        h('div', { class: 'row' }, h('div', { class: 'bar grow' }, h('i', { style: `width:${Math.min(100, used / Math.max(1, stones) * 100)}%` }))),
+        eqAb.length ? h('div', { class: 'good', style: 'font-size:12px;margin-top:4px' }, `装備で有効中：${eqAb.map(a => SUPPORTS[a]?.name ?? a).join('、')}`) : null,
+        h('div', { class: 'list', style: 'margin-top:4px' }, ...learned.filter(a => !a.startsWith('cmd_')).sort((x, y) => (hs.equipped.includes(y) ? 1 : 0) - (hs.equipped.includes(x) ? 1 : 0) || (SUPPORTS[x]?.cost ?? 0) - (SUPPORTS[y]?.cost ?? 0)).map(ab => {
+          const on = hs.equipped.includes(ab); const cost = SUPPORTS[ab]?.cost ?? 0; const free = eqAb.includes(ab);
+          return h('div', { class: 'item' + (on ? ' sel' : '') }, h('span', { class: 'pill' }, `魔石${cost}`), h('div', { class: 'grow' }, h('div', {}, SUPPORTS[ab]?.name ?? ab, free ? h('span', { class: 'pill good' }, '装備で有効') : null), h('div', { class: 'dim', style: 'font-size:11px' }, SUPPORTS[ab]?.desc ?? '')),
+            btn(on ? '外す' : 'セット', () => { if (on) hs.equipped = hs.equipped.filter(x => x !== ab); else { if (used + cost > stones) { toast(`魔石が足りない（あと${stones - used}）`); return; } hs.equipped.push(ab); } G.syncHp(s, hs); this.render(); }, 'small', !on && free));
+        })),
         apRows.length ? h('div', { style: 'margin-top:6px' }, h('b', {}, '装備から習得中'), ...apRows) : null)] };
   }
 
@@ -403,15 +412,21 @@ export class App {
       btn('×', () => { gam.splice(i, 1); this.render(); }, 'small'));
     const autoOn = s.settings.autoGambit;
     const law = G.currentLaw(s);
-    const preview = recommendGambits(c, law, s.bag);
+    const mode = G.autoModeOf(s, c);
+    const preview = recommendGambits(c, law, s.bag, { mode });
     return { chips: keys.map(k => btn(this.memberName(k), () => { (this as any)._gkey = k; this.render(); }, 'small' + (k === key ? ' sel' : ''))),
       actions: [btn(autoOn ? 'おまかせ作戦：ON' : 'おまかせ作戦：OFF', () => { s.settings.autoGambit = !autoOn; this.render(); }, 'small' + (autoOn ? ' sel' : ''))],
       content: [
       h('div', { class: 'win' }, h('div', { class: 'row' }, h('span', { class: 'dim grow', style: 'font-size:11px' }, autoOn ? '戦闘のたびに、各メンバーの持ち技・役割・その階層のロウから作戦を自動で組む。手動の作戦は保存されたまま使われない' : '手動の作戦を使う。ロウ違反の行は自動で飛ばされる'))),
-      autoOn ? h('div', { class: 'win' }, h('h2', {}, `${c.name}の今の作戦（自動）`), law ? h('div', { class: 'law', style: 'font-size:11px' }, `ロウ：${law.name} を反映`) : null, h('div', { class: 'list', style: 'max-height:none' }, ...preview.map((g, i) => h('div', { class: 'item', style: 'font-size:13px' }, h('span', { class: 'pill' }, String(i + 1)), describeGambit(g, c))))) : null,
-      h('div', { class: 'win', style: autoOn ? 'opacity:.6' : '' }, h('div', { class: 'dim', style: 'font-size:12px' }, (autoOn ? '【手動の作戦（今は未使用）】' : '') + '上から順に条件を見て、最初に当てはまった行動をとる。オート戦闘でも手動でも、ゲージが溜まった時に作戦が当てはまれば自動で行動する。'),
+      autoOn && !(this as any)._showManual ? h('div', { class: 'win row' }, h('span', { class: 'dim grow', style: 'font-size:12px' }, '手動の作戦は保存されたまま（おまかせON中は未使用）'), btn('表示', () => { (this as any)._showManual = true; this.render(); }, 'small')) : null,
+      autoOn && (this as any)._showManual ? h('div', { class: 'win row' }, h('span', { class: 'dim grow', style: 'font-size:12px' }, '手動の作戦'), btn('たたむ', () => { (this as any)._showManual = false; this.render(); }, 'small')) : null,
+      (!autoOn || (this as any)._showManual) ? h('div', { class: 'win', style: autoOn ? 'opacity:.6' : '' }, h('div', { class: 'dim', style: 'font-size:12px' }, (autoOn ? '【手動の作戦（今は未使用）】' : '') + '上から順に条件を見て、最初に当てはまった行動をとる。オート戦闘でも手動でも、ゲージが溜まった時に作戦が当てはまれば自動で行動する。'),
         h('div', { class: 'list', style: 'max-height:none' }, ...gam.map(rowEl)),
-        btn('行を追加', () => { if (gam.length >= rows) { toast(`作戦は${rows}行まで`); return; } gam.push({ cond: 'always', action: 'attack', on: true }); this.render(); }, 'small'))] };
+        btn('行を追加', () => { if (gam.length >= rows) { toast(`作戦は${rows}行まで`); return; } gam.push({ cond: 'always', action: 'attack', on: true }); this.render(); }, 'small')) : null,
+      autoOn ? h('div', { class: 'win' }, h('h2', {}, `${c.name}の今の作戦（自動）`), law ? h('div', { class: 'law', style: 'font-size:11px' }, `ロウ：${law.name} を反映`) : null, h('div', { class: 'list', style: 'max-height:none' }, ...preview.map((g, i) => h('div', { class: 'item', style: 'font-size:13px' }, h('span', { class: 'pill' }, String(i + 1)), describeGambit(g, c))))) : null,
+      autoOn ? h('div', { class: 'win' }, h('h2', {}, `${c.name}のおまかせモード`),
+        h('div', { class: 'grid2' }, ...AUTO_MODES.map(m => btn(`${m.name}\n${m.desc}`, () => { G.setAutoMode(s, key, m.id); this.render(); }, 'small mode' + (mode === m.id ? ' sel' : '')))),
+        h('div', { class: 'row', style: 'margin-top:6px' }, btn('このモードを全員に', () => { for (const k of keys) G.setAutoMode(s, k, mode); toast('全員に適用した'); this.render(); }, 'small'))) : null] };
   }
   bagTab(): TabOut {
     const s = this.s!;
@@ -465,7 +480,8 @@ export class App {
       const gradeJp = (g: string) => g === 'plus_rare' ? '●＋' : g === 'rare' ? '●' : g === 'plus' ? '＋' : '無印';
       const rowsC: [string, string | number, string | number, boolean][] = [
         ['Lv', a.level, b.level, true], ['HP', ca.stats.hp, cb.stats.hp, true], ['攻撃', ca.atk, cb.atk, true], ['防御', ca.def, cb.def, true], ['魔力', ca.stats.mag, cb.stats.mag, true], ['素早さ', ca.stats.spd, cb.stats.spd, true],
-        ['個体値合計', Math.round(Object.values(a.iv).reduce((x, y) => x + y, 0) * 100) / 100, Math.round(Object.values(b.iv).reduce((x, y) => x + y, 0) * 100) / 100, true],
+        ['個体値合計', Math.round(Object.values(a.iv).reduce((x, y) => x + y, 0) * 100), Math.round(Object.values(b.iv).reduce((x, y) => x + y, 0) * 100), true],
+        ...STAT_KEYS.map(k => [`個体値 ${STAT_JP[k]}`, Math.round(a.iv[k] * 100), Math.round(b.iv[k] * 100), true] as [string, number, number, boolean]),
         ['絆', a.bond, b.bond, true], ['特性数', a.traits.length, b.traits.length, true],
         ['等級', gradeJp(a.grade), gradeJp(b.grade), false], ['性格', a.nature, b.nature, false], ['役割', ROLE_JP[MONSTERS[a.id].role], ROLE_JP[MONSTERS[b.id].role], false],
         ['特性', a.traits.map(t => AFFIXES[t.id].desc(t.value)).join('、') || 'なし', b.traits.map(t => AFFIXES[t.id].desc(t.value)).join('、') || 'なし', false],
@@ -481,6 +497,7 @@ export class App {
       const where = s.party.includes('m:' + m.uid) ? '前線' : s.reserve.includes('m:' + m.uid) ? '控え' : '牧場';
       return h('div', { class: 'item', style: 'flex-wrap:wrap' }, monsterEl(m.id, 40),
         h('div', { class: 'grow' }, h('div', {}, `${c.name} `, h('span', { class: 'pill' }, where), h('span', { class: 'dim' }, ` Lv${m.level} 絆${m.bond} ${m.nature}`)),
+          h('div', { class: 'dim', style: 'font-size:11px' }, `個体値：${STAT_KEYS.map(k => `${STAT_JP[k].slice(0, 2)}${Math.round(m.iv[k] * 100)}`).join(' ')}　合計${Math.round(STAT_KEYS.reduce((a, k) => a + m.iv[k], 0) * 100)}`),
           h('div', { class: 'dim', style: 'font-size:11px' }, `HP${c.stats.hp} 攻${c.atk} 防${c.def} 速${c.stats.spd}｜${ROLE_JP[MONSTERS[m.id].role]}｜特性：${m.traits.map(t => AFFIXES[t.id].desc(t.value)).join('、') || 'なし'}`),
           h('div', { class: 'dim', style: 'font-size:11px' }, `固有技：${MONSTERS[m.id].skills.map((k, i) => SKILLS[k].name + (i === 0 || m.bond >= 3 * (i + 1) ? '' : `(絆${3 * (i + 1)})`)).join('、')}`)),
         h('div', { class: 'row' },

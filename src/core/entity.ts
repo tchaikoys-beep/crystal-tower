@@ -1,9 +1,9 @@
 // 英雄・仲間・敵を「戦闘体（Combatant）」に変換する
 import type { Element, Status, Stats, Skill, Slot, ItemInstance, AffixRoll, MonsterRole } from './types';
-import { STAT_KEYS, ELEMENTS } from './types';
+import { STAT_KEYS, ELEMENTS, SLOTS } from './types';
 import type { GameState, HeroState, MonsterAlly, Gambit } from './state';
 import { heroBase, enemyBase, equipLevelReq, itemPowerMult, masteryLevel } from './formulas';
-import { HEROES, JOBS, COMMANDS, jobOfCommand } from '../data/jobs';
+import { HEROES, JOBS, COMMANDS, SUPPORTS, jobOfCommand } from '../data/jobs';
 import { ITEMS } from '../data/items';
 import { AFFIXES, SETS } from '../data/affixes';
 import { MONSTERS } from '../data/monsters';
@@ -116,6 +116,18 @@ export function applyAffixes(mods: Mods, stats: Stats, affixes: AffixRoll[], out
       case 'lucky': mods.drop += v; break;
       case 'tamer': mods.capture += v; break;
       case 'reborn': mods.tp += v; break;
+      case 'm_hp': stats.hp *= 1 + v; break;
+      case 'm_atk': out.atkPct += v; break;
+      case 'm_mag': out.magPct += v; break;
+      case 'm_def': out.defPct += v; out.mdefPct += v * 0.5; break;
+      case 'm_spd': stats.spd *= 1 + v; break;
+      case 'm_regen': mods.regen += v; break;
+      case 'm_crit': mods.crit += v; break;
+      case 'm_eva': mods.evasion += v; break;
+      case 'm_barrier': mods.magicBarrier += v; break;
+      case 'm_allres': mods.allResist *= 1 - v; break;
+      case 'm_growth': mods.exp += v; break;
+      case 'm_bond': break; // 絆計算側で参照
       default:
         if (a.cat === 'element' && a.element) { mods.elementDmg[a.element] = (mods.elementDmg[a.element] ?? 0) + v; }
         else if (a.cat === 'resist' && a.element) { mods.resist[a.element] = (mods.resist[a.element] ?? 1) * (1 - Math.min(1, v)); }
@@ -125,20 +137,34 @@ export function applyAffixes(mods: Mods, stats: Stats, affixes: AffixRoll[], out
     }
   }
 }
-function applySupports(supports: Set<string>, mods: Mods, stats: Stats, hasShield: boolean, out: { atkPct: number; magPct: number }): void {
+function applySupports(supports: Set<string>, mods: Mods, stats: Stats, hasShield: boolean, out: { atkPct: number; magPct: number; defPct?: number; mdefPct?: number }): void {
   if (supports.has('hp10')) stats.hp *= 1.1;
+  if (supports.has('hp20')) stats.hp *= 1.2;
   if (supports.has('hp30')) stats.hp *= 1.3;
   if (supports.has('mp10')) stats.mp *= 1.1;
+  if (supports.has('mp20')) stats.mp *= 1.2;
   if (supports.has('mag_up')) stats.mag *= 1.2;
+  if (supports.has('mag10')) stats.mag *= 1.1;
+  if (supports.has('str10')) out.atkPct += 0.1;
+  if (supports.has('vit10')) out.defPct = (out.defPct ?? 0) + 0.1;
+  if (supports.has('spr10')) out.mdefPct = (out.mdefPct ?? 0) + 0.1;
+  if (supports.has('spd10')) stats.spd *= 1.1;
+  if (supports.has('crit10')) mods.crit += 0.1;
+  if (supports.has('eva10')) mods.evasion += 0.1;
+  if (supports.has('multi10')) mods.multi += 0.1;
+  if (supports.has('vamp5')) mods.vamp += 0.05;
+  if (supports.has('heal_up')) mods.heal += 0.25;
+  if (supports.has('magic_barrier')) mods.magicBarrier += 0.2;
   if (supports.has('two_handed') && !hasShield) out.atkPct += 0.4;
   if (supports.has('dash')) mods.first += 0.2;
   if (supports.has('steal_up')) mods.steal += 0.3;
   if (supports.has('capture_up')) mods.capture += 0.5;
   if (supports.has('gil_up')) mods.gil += 0.3;
   if (supports.has('exp_up')) mods.exp += 0.3;
-  if (supports.has('res_fire')) mods.resist.fire = (mods.resist.fire ?? 1) * 0.5;
-  if (supports.has('res_poison')) mods.statusRes.poison = 1;
-  if (supports.has('res_sleep')) mods.statusRes.sleep = 1;
+  if (supports.has('abp_up')) mods.abp += 0.3;
+  if (supports.has('drop_up')) mods.drop += 0.2;
+  for (const el of ['fire', 'ice', 'thunder', 'water', 'wind', 'earth', 'holy', 'dark'] as const) if (supports.has('res_' + el)) mods.resist[el] = (mods.resist[el] ?? 1) * 0.5;
+  for (const st of ['poison', 'sleep', 'blind', 'silence', 'slow', 'paralyze', 'berserk'] as Status[]) if (supports.has('res_' + st)) mods.statusRes[st] = 1;
   if (supports.has('first_strike')) mods.first += 0.4;
   if (supports.has('ribbon')) for (const st of ['poison', 'sleep', 'slow', 'blind', 'silence', 'berserk', 'paralyze'] as Status[]) mods.statusRes[st] = 1;
 }
@@ -156,34 +182,46 @@ export function slotForKind(kind: string): Slot[] {
   switch (kind) { case 'weapon': return ['weapon']; case 'shield': return ['shield']; case 'head': return ['head']; case 'body': return ['body']; case 'acc': return ['acc1', 'acc2']; }
   return [];
 }
-export function heroSupports(hs: HeroState): Set<string> {
-  // 装備枠のアビリティ＋ジョブ固有（現在ジョブで習得済みのものは常時有効ではなく装備が必要。FF5準拠で現ジョブの習得分は自動適用）
-  const s = new Set<string>(hs.equipped);
+/** 装備中アイテムが持つ習得アビリティ（個体 learn 優先）。FF9式：装備している間は未習得でも使える */
+export function learnOf(it: ItemInstance | null | undefined): { ability?: string; skill?: string; ap: number } | undefined { return it ? (it.learn ?? ITEMS[it.base].learn) : undefined; }
+export function equipLearns(s: GameState, hs: HeroState): { abilities: string[]; skills: string[] } {
+  const abilities: string[] = [], skills: string[] = [];
+  for (const sl of SLOTS) { const l = learnOf(itemOf(s, hs.equip[sl])); if (!l) continue; if (l.ability) abilities.push(l.ability); if (l.skill) skills.push(l.skill); }
+  return { abilities, skills };
+}
+/** 魔石容量（FF9式）。Lvと転生ボードで増える */
+export function abilityStones(s: GameState, hs: HeroState): number { return 6 + Math.floor(hs.level / 4) + boardValue(s, 'ability_slots') * 4 + (s.rebirths >= 3 ? 2 : 0); }
+export function stonesUsed(hs: HeroState): number { return hs.equipped.reduce((a, k) => a + (SUPPORTS[k]?.cost ?? 0), 0); }
+export function heroSupports(s: GameState, hs: HeroState): Set<string> {
+  // セット中のサポート＋現ジョブで習得済みの分（FF5準拠で自動適用）＋装備中アイテムのアビリティ（FF9式、魔石不要）
+  const set = new Set<string>(hs.equipped);
   const job = JOBS[hs.job];
   const jl = hs.jobs[hs.job]?.lv ?? 1;
-  for (const l of job.learn) if (jl >= l.lv) s.add(l.ability);
-  return s;
+  for (const l of job.learn) if (jl >= l.lv) set.add(l.ability);
+  for (const a of equipLearns(s, hs).abilities) set.add(a);
+  return set;
 }
 /** カテゴリ内で使える技：ジョブLvで解放した分＋装備から覚えた分 */
-export function categorySkills(hs: HeroState, cat: string): Skill[] {
+export function categorySkills(hs: HeroState, cat: string, extra: string[] = []): Skill[] {
   const out: Skill[] = [];
   const job = jobOfCommand(cat);
   const lv = job ? (hs.jobs[job.id]?.lv ?? 0) : 0;
   if (job) for (const u of job.unlocks) { const sk = SKILLS[u.skill]; if (!sk || lv < u.lv || out.includes(sk)) continue; if (sk.kind === 'spell' && (sk.level ?? 1) >= 4 && !(hs.tomes ?? []).includes(sk.id)) continue; out.push(sk); }
-  for (const id of hs.learnedSkills ?? []) { const sk = SKILLS[id]; if (sk && sk.category === cat && !out.includes(sk)) out.push(sk); }
+  for (const id of [...(hs.learnedSkills ?? []), ...extra]) { const sk = SKILLS[id]; if (sk && sk.category === cat && !out.includes(sk)) out.push(sk); }
   return out;
 }
 /** コマンド枠にセットできるカテゴリ（技を1つ以上持っているもの） */
-export function availableCategories(hs: HeroState): string[] {
-  return Object.keys(COMMANDS).filter(cat => categorySkills(hs, cat).length > 0);
+export function availableCategories(hs: HeroState, extra: string[] = []): string[] {
+  return Object.keys(COMMANDS).filter(cat => categorySkills(hs, cat, extra).length > 0);
 }
-export function heroCommands(_s: GameState, hs: HeroState, _supports: Set<string>): Command[] {
+export function heroCommands(s: GameState, hs: HeroState, _supports: Set<string>): Command[] {
+  const extra = equipLearns(s, hs).skills;
   const cmds: Command[] = [{ id: 'attack', name: 'たたかう', skill: SKILLS.attack, group: 'basic' }];
   const job = JOBS[hs.job];
   const cats = [...(job.command ? [job.command] : []), ...(hs.equippedCmds ?? []).filter(c => c !== job.command)];
   for (const cat of cats) {
     const name = COMMANDS[cat]?.name ?? cat;
-    for (const sk of categorySkills(hs, cat)) if (!cmds.some(c => c.id === sk.id)) cmds.push({ id: sk.id, name: sk.name, skill: sk, group: name });
+    for (const sk of categorySkills(hs, cat, extra)) if (!cmds.some(c => c.id === sk.id)) cmds.push({ id: sk.id, name: sk.name, skill: sk, group: name });
   }
   cmds.push({ id: 'defend', name: 'ぼうぎょ', skill: SKILLS.defend, group: 'basic' });
   return cmds;
@@ -216,7 +254,7 @@ export function buildHero(s: GameState, hs: HeroState): Combatant {
   let weaponPower = 0, def_ = 0, mdef = 0;
   let weaponElement: Element | null = null;
   let weaponType: string | null = null;
-  const supports = heroSupports(hs);
+  const supports = heroSupports(s, hs);
   const hasShield = !!hs.equip.shield;
   for (const slot of Object.keys(hs.equip) as Slot[]) {
     const it = itemOf(s, hs.equip[slot]);

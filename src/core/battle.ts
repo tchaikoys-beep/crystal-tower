@@ -51,6 +51,9 @@ export class Battle {
     for (const c of [...players, ...enemies]) {
       c.atb = rng.range(0, 40) + (c.side === 'player' ? c.mods.first * 100 : 0);
       if (c.supports.has('auto_regen')) c.statuses.regen = BUFF_DUR;
+      if (c.supports.has('auto_protect')) c.statuses.protect = BUFF_DUR;
+      if (c.supports.has('auto_shell')) c.statuses.shell = BUFF_DUR;
+      if (c.supports.has('auto_haste')) c.statuses.haste = BUFF_DUR;
       if (c.mods.hermes) c.statuses.haste = 9999;
     }
     if (opt.law) this.say(`ロウ：${opt.law.name}`, 'law');
@@ -141,9 +144,10 @@ export class Battle {
     }
     if (action.cmd.group === 'item') { this.useItem(c, action.cmd.id, action.targetUid); this.after(); return; }
     if (skill.mp > 0) {
-      if (c.mp < skill.mp) { this.say(`${c.name}はMPが足りない`, 'sys'); this.after(); return; }
+      const mpCost = c.supports.has('half_mp') ? Math.ceil(skill.mp / 2) : skill.mp;
+      if (c.mp < mpCost) { this.say(`${c.name}はMPが足りない`, 'sys'); this.after(); return; }
       if (c.statuses.silence && skill.kind === 'spell') { this.say(`${c.name}は沈黙していて唱えられない`, 'bad'); this.after(); return; }
-      c.mp -= skill.mp;
+      c.mp -= mpCost;
     }
     if (skill.effect !== 'defend' && skill.effect !== 'flee') this.fx.push({ type: 'act', uid: c.uid, text: skill.kind === 'spell' || skill.effect === 'magic' || skill.effect === 'heal' ? 'cast' : 'attack' });
     if (skill.kind === 'limit') { c.limit = 0; this.say(`${c.name}のリミット技「${skill.name}」！`, 'good'); }
@@ -208,6 +212,7 @@ export class Battle {
       const el = skill.element ?? c.weaponElement;
       let mult = skill.power * c.focus;
       if (c.mods.brave && c.hp >= c.stats.hp) mult *= 1.5;
+      if (c.supports.has('desperate') && c.hp <= c.stats.hp * 0.3) mult *= 1.5;
       if (t.family in c.mods.slayer) mult *= 1 + c.mods.slayer[t.family];
       if (t.boss && c.mods.slayer.boss) mult *= 1 + c.mods.slayer.boss;
       const crit = this.rng.chance(c.mods.crit);
@@ -270,7 +275,12 @@ export class Battle {
   private damage(t: Combatant, d: number, _src: string) {
     t.hp = Math.max(0, t.hp - d);
     if (t.statuses.sleep) delete t.statuses.sleep;
-    if (t.kind === 'hero') t.limit = Math.min(100, t.limit + (d / t.stats.hp) * 70);
+    if (t.kind === 'hero') t.limit = Math.min(100, t.limit + (d / t.stats.hp) * 70 * (t.supports.has('limit_up') ? 1.5 : 1));
+    // オートポーション：袋のポーションを自動で使う（戦闘中の袋を消費）
+    if (t.hp > 0 && t.side === 'player' && t.supports.has('auto_potion') && !this.opt.noItem) {
+      const pid = ['x_potion', 'hi_potion', 'potion'].find(k => (this.opt.bag[k] ?? 0) > 0);
+      if (pid) { this.opt.bag[pid]--; const h = pid === 'x_potion' ? t.stats.hp : pid === 'hi_potion' ? 500 : 100; this.heal(t, h); this.say(`${t.name}はオートポーション（${pid === 'x_potion' ? 'エクスポーション' : pid === 'hi_potion' ? 'ハイポーション' : 'ポーション'}）`, 'heal'); }
+    }
     if (t.hp <= 0 && t.mods.phoenix && !t.phoenixUsed) { t.phoenixUsed = true; t.hp = Math.round(t.stats.hp * 0.5); this.say(`${t.name}はフェニックスの力で蘇った`, 'good'); }
   }
   private heal(t: Combatant, h: number) {
@@ -381,8 +391,11 @@ export class Battle {
         case 'enemy_hp_lt_30': target = enemies.find(e => e.hp < e.stats.hp * 0.3); if (!target) continue; break;
         case 'enemy_capturable': target = enemies.find(e => e.hp < e.stats.hp * 0.3 && !e.boss); if (!target) continue; break;
         case 'enemy_boss': target = enemies.find(e => e.boss); if (!target) continue; break;
+        case 'enemy_count_ge_2': if (enemies.length < 2) continue; break;
         case 'enemy_count_ge_3': if (enemies.length < 3) continue; break;
+        case 'mp_gt_10': if (c.mp < c.stats.mp * 0.1) continue; break;
         case 'mp_gt_30': if (c.mp < c.stats.mp * 0.3) continue; break;
+        case 'mp_gt_60': if (c.mp < c.stats.mp * 0.6) continue; break;
         case 'limit_ready': if (c.limit < 100) continue; break;
         case 'not_buffed': if (c.statuses.protect || c.statuses.shell || c.statuses.haste) continue; target = c; break;
         default: continue;

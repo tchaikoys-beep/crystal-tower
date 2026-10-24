@@ -6,12 +6,13 @@ import { SAVE_VERSION } from './state';
 import { Rng } from './rng';
 import { Battle } from './battle';
 import type { Combatant } from './entity';
-import { buildHero, buildAlly, buildEnemy, canEquip, slotForKind, boardValue, itemOf, isAlive } from './entity';
+import { buildHero, buildAlly, buildEnemy, canEquip, slotForKind, boardValue, itemOf, isAlive, learnOf } from './entity';
 import { expToNext, abpToNext, MAX_LEVEL, MAX_JOB_LEVEL, isAreaBossFloor, isGateFloor, isWarpFloor, tierOf, masteryGain, affixValue } from './formulas';
 import { rollDrops, generateItem, rollRarity, rollAffixes } from './loot';
 import { generateFloor, generateUndergroundFloor, lawForFloor, lawBlock } from './tower';
 import { computeTP, trialMult } from './rebirth';
 import { recommendGambits } from './autogambit';
+import type { AutoMode, AffixRoll } from './types';
 import { HEROES, JOBS } from '../data/jobs';
 import { ITEMS, tomeSpell, TOMES } from '../data/items';
 import { MONSTERS, areaFor, SUPER_BOSSES } from '../data/monsters';
@@ -54,7 +55,7 @@ export function createHero(id: string, level = 1): HeroState {
 export function newGame(heroId: string, seed = Date.now() % 1000000): GameState {
   const s: GameState = {
     version: SAVE_VERSION, seed, rngState: seed, heroes: {}, party: [], reserve: [], monsters: [], inventory: [], bag: { potion: 5, phoenix_down: 1, magi_cage: 4 }, gil: 300,
-    run: newRun(1), maxFloorEver: 1, maxDepthEver: 0, superBosses: {}, rebirths: 0, tp: 0, board: { start: 1 }, blessing: null, trials: [],
+    run: newRun(1), maxFloorEver: 1, maxDepthEver: 0, superBosses: {}, autoModes: {}, rebirths: 0, tp: 0, board: { start: 1 }, blessing: null, trials: [],
     missions: { offers: [], active: [], completed: 0 },
     codex: { items: [], affixes: [], monsters: [] }, stats: { battles: 0, kills: 0, captures: 0, rebirthLog: [] }, uidCounter: 1, settings: { auto: true, speed: 2, autoGambit: true, hand: 'right' },
   };
@@ -333,7 +334,7 @@ export function startBattle(s: GameState, ev: FloorEvent): Battle {
   const enemies = ev.enemies.map((raw, i) => { const elite = raw.endsWith('+'); const id = elite ? raw.slice(0, -1) : raw; return buildEnemy(id, scale, i, { elite, guardian: ev.type === 'guardian' && ev.boss === 'none', midboss: ev.type === 'guardian' && ev.boss === 'mid', areaboss: ev.type === 'guardian' && ev.boss === 'area', trialMult: tm }); });
   let players = partyCombatants(s);
   if (s.trials.includes('nobeast')) players = players.filter(p => p.kind === 'hero');
-  if (s.settings.autoGambit) { const law = ev.type === 'guardian' && ev.superBoss ? null : currentLaw(s); for (const p of players) p.gambits = recommendGambits(p, law, s.bag); }
+  if (s.settings.autoGambit) { const law = ev.type === 'guardian' && ev.superBoss ? null : currentLaw(s); for (const p of players) p.gambits = recommendGambits(p, law, s.bag, { mode: autoModeOf(s, p) }); }
   const b = new Battle(players, enemies, rng, {
     floor: scale, law: ev.type === 'guardian' && ev.superBoss ? null : currentLaw(s), noItem: s.trials.includes('noitem'), auto: s.settings.auto, respectLaw: true, bag: s.bag, gil: s.gil,
     canCaptureMidboss: boardValue(s, 'midboss_capture') > 0, canFlee: ev.type === 'battle', windBlessing: s.blessing === 'wind',
@@ -458,14 +459,14 @@ function grantExp(s: GameState, exp: number, abp: number, ap: number, b: Battle)
       // 装備アビリティAP
       for (const sl of SLOTS) {
         const it = itemOf(s, hs.equip[sl]); if (!it) continue;
-        const base = ITEMS[it.base]; if (!base.learn) continue;
-        const key = base.learn.ability ?? base.learn.skill!;
-        if (base.learn.ability && hs.learned.includes(key)) continue;
-        if (base.learn.skill && (hs.learnedSkills.includes(key) || hasSkillByJob(hs, key))) continue;
+        const base = ITEMS[it.base]; const lr = learnOf(it); if (!lr) continue;
+        const key = lr.ability ?? lr.skill!;
+        if (lr.ability && hs.learned.includes(key)) continue;
+        if (lr.skill && (hs.learnedSkills.includes(key) || hasSkillByJob(hs, key))) continue;
         hs.itemAp[key] = (hs.itemAp[key] ?? 0) + Math.round(ap * mult);
-        if (hs.itemAp[key] >= base.learn.ap) {
-          if (base.learn.ability) hs.learned.push(key); else hs.learnedSkills.push(key);
-          delete hs.itemAp[key]; lines.push(`${HEROES[hs.id].name}は${base.name}から「${learnName(base.learn)}」を習得した！`);
+        if (hs.itemAp[key] >= lr.ap) {
+          if (lr.ability) hs.learned.push(key); else hs.learnedSkills.push(key);
+          delete hs.itemAp[key]; lines.push(`${HEROES[hs.id].name}は${base.name}から「${learnName(lr)}」を習得した！`);
         }
       }
     } else {
@@ -475,7 +476,7 @@ function grantExp(s: GameState, exp: number, abp: number, ap: number, b: Battle)
       while (m.level < MAX_LEVEL && m.exp >= expToNext(m.level)) { m.exp -= expToNext(m.level); m.level++; }
       if (m.level > before) { const c = buildAlly(s, m); m.hp = Math.min(c.stats.hp, m.hp + 50 * (m.level - before)); lines.push(`${MONSTERS[m.id].name}はLv${m.level}になった`); }
       if (mult >= 1) {
-        m.bondXp += 1 + boardValue(s, 'bond_pct');
+        m.bondXp += (1 + boardValue(s, 'bond_pct')) * (1 + (m.traits.find(x => x.id === 'm_bond')?.value ?? 0));
         const need = 5 + m.bond * 5;
         if (m.bond < 10 && m.bondXp >= need) { m.bondXp -= need; m.bond++; lines.push(`${MONSTERS[m.id].name}との絆がランク${m.bond}に`); }
       }
@@ -503,6 +504,9 @@ export function hasSkillByJob(hs: HeroState, skillId: string): boolean {
 }
 export function cmdSlotsFor(s: GameState, hs: HeroState): number { return cmdSlots(s) + (JOBS[hs.job].command ? 0 : 1); }
 
+export function memberKey(c: { kind: string; ref: string }): string { return (c.kind === 'hero' ? 'h:' : 'm:') + c.ref; }
+export function autoModeOf(s: GameState, c: { kind: string; ref: string }): AutoMode { return (s.autoModes ??= {})[memberKey(c)] ?? 'balanced'; }
+export function setAutoMode(s: GameState, key: string, mode: AutoMode): void { (s.autoModes ??= {})[key] = mode; }
 export function createMonsterAlly(s: GameState, id: string, level: number, rareMult = 1, plus = false): MonsterAlly {
   const rng = rngOf(s);
   const rare = rng.chance(0.01 * (s.rebirths >= 2 ? 2 : 1) * rareMult);
@@ -513,10 +517,10 @@ export function createMonsterAlly(s: GameState, id: string, level: number, rareM
   const boost: Record<string, keyof Stats> = { '勇敢': 'str', '慎重': 'vit', '狡猾': 'spd', '穏やか': 'spr', '好奇心': 'mag', '気まぐれ': 'luck' };
   iv[boost[nature]] += 0.1;
   if (plus) for (const k of STAT_KEYS) iv[k] = Math.round((iv[k] + 0.1) * 100) / 100;
-  const traitPool = Object.values(AFFIXES).filter(a => a.cat === 'action' || a.cat === 'defense' || a.cat === 'farm');
+  const traitPool = Object.values(AFFIXES).filter(a => a.cat === 'action' || a.cat === 'defense' || a.cat === 'farm' || a.cat === 'attack' || a.cat === 'monster');
   const n = rng.int(0, 2) + (rare ? 1 : 0) + (plus ? 1 : 0);
-  const traits = [];
-  for (let i = 0; i < n; i++) { const a = rng.pick(traitPool); traits.push({ id: a.id, value: Math.round(a.base * (1 + 0.3 * (tierOf(s.run.floor) - 1)) * 1000) / 1000 }); }
+  const traits: AffixRoll[] = [];
+  for (let i = 0; i < n; i++) { let a = rng.pick(traitPool); if (traits.some(x => x.id === a.id)) a = rng.pick(traitPool); if (traits.some(x => x.id === a.id)) continue; traits.push({ id: a.id, value: Math.round(a.base * (1 + 0.3 * (tierOf(s.run.floor) - 1)) * rng.range(0.7, 1.4) * 1000) / 1000 }); }
   const grade = plus && rare ? 'plus_rare' : plus ? 'plus' : rare ? 'rare' : 'normal';
   const m: MonsterAlly = { uid: nextUid(s), id, level, exp: 0, bond: 0, bondXp: 0, iv, nature, traits, rare, grade, acc: null, gambits: defaultGambits('ally'), hp: 99999, mp: 99999, food: {} };
   saveRng(s, rng);

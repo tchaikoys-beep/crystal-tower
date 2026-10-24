@@ -46,6 +46,21 @@ add(
   { id: 'tamer', name: '獣使いの', cat: 'farm', kinds: ACC, base: 0.15, perTier: 0.3, weight: 4, desc: v => `捕獲率+${pct(v)}` },
   { id: 'reborn', name: '転生者の', cat: 'farm', kinds: ACC, base: 0.05, perTier: 0.3, weight: 2, desc: v => `転生ポイント+${pct(v)}` },
 );
+// モンスター専用の特性（装備には付かない）
+add(
+  { id: 'm_hp', name: '頑丈な', cat: 'monster', kinds: [], base: 0.12, perTier: 0.3, weight: 6, desc: v => `最大HP+${pct(v)}` },
+  { id: 'm_atk', name: '荒ぶる', cat: 'monster', kinds: [], base: 0.10, perTier: 0.3, weight: 6, desc: v => `攻撃+${pct(v)}` },
+  { id: 'm_mag', name: '霊感の', cat: 'monster', kinds: [], base: 0.10, perTier: 0.3, weight: 4, desc: v => `魔力+${pct(v)}` },
+  { id: 'm_def', name: '鉄壁の', cat: 'monster', kinds: [], base: 0.10, perTier: 0.3, weight: 5, desc: v => `防御+${pct(v)}` },
+  { id: 'm_spd', name: '俊足の', cat: 'monster', kinds: [], base: 0.08, perTier: 0.3, weight: 5, desc: v => `素早さ+${pct(v)}` },
+  { id: 'm_regen', name: '再生の', cat: 'monster', kinds: [], base: 0.02, perTier: 0.3, weight: 3, desc: v => `毎ターンHP${pct(v)}回復` },
+  { id: 'm_crit', name: '狩人の', cat: 'monster', kinds: [], base: 0.06, perTier: 0.3, weight: 4, desc: v => `クリティカル率+${pct(v)}` },
+  { id: 'm_eva', name: '霧の', cat: 'monster', kinds: [], base: 0.06, perTier: 0.3, weight: 4, desc: v => `回避+${pct(v)}` },
+  { id: 'm_barrier', name: '魔障の', cat: 'monster', kinds: [], base: 0.10, perTier: 0.3, weight: 3, desc: v => `魔法被ダメ-${pct(v)}` },
+  { id: 'm_allres', name: '竜鱗の', cat: 'monster', kinds: [], base: 0.08, perTier: 0.3, weight: 2, desc: v => `全属性被ダメ-${pct(v)}` },
+  { id: 'm_bond', name: '人懐こい', cat: 'monster', kinds: [], base: 0.25, perTier: 0.2, weight: 3, desc: v => `絆の上がりやすさ+${pct(v)}` },
+  { id: 'm_growth', name: '早熟の', cat: 'monster', kinds: [], base: 0.10, perTier: 0.2, weight: 3, desc: v => `獲得EXP+${pct(v)}` },
+);
 export const UNIQUES: Record<string, { name: string; desc: string }> = {
   brave: { name: 'ブレイブ', desc: 'HP満タン時に攻撃×1.5' },
   genji: { name: '源氏', desc: '常時2回攻撃' },

@@ -54,7 +54,8 @@ export interface BaseItem {
   set?: string;
 }
 
-export type AffixCat = 'attack' | 'element' | 'slayer' | 'status' | 'defense' | 'resist' | 'action' | 'farm';
+export type AutoMode = 'balanced' | 'attack' | 'skill' | 'save' | 'heal' | 'noheal';
+export type AffixCat = 'attack' | 'element' | 'slayer' | 'status' | 'defense' | 'resist' | 'action' | 'farm' | 'monster';
 export interface AffixDef {
   id: string;
   name: string;          // 接頭辞
@@ -81,6 +82,7 @@ export interface ItemInstance {
   found: number; // 入手階
   unsealed?: boolean; // 封印解除（装備Lv制限半減）
   spell?: string;     // 魔法書の対象（kind=tome）
+  learn?: { ability?: string; skill?: string; ap: number }; // 個体に付いた装備アビリティ（基礎の learn より優先）
 }
 
 export type School = 'white' | 'black' | 'time' | 'blue';
@@ -112,6 +114,7 @@ export interface SupportAbility {
   id: string;
   name: string;
   desc: string;
+  cost: number;        // 魔石コスト（FF9式）
 }
 
 export interface CommandCategory { id: string; name: string; desc: string }

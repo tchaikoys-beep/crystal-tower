@@ -1,4 +1,4 @@
-import type { AffixRoll, ItemInstance, Slot, Stats } from './types';
+import type { AutoMode, AffixRoll, ItemInstance, Slot, Stats } from './types';
 
 export interface Gambit { cond: string; action: string; on: boolean }
 export const GAMBIT_CONDS: { id: string; name: string }[] = [
@@ -12,8 +12,11 @@ export const GAMBIT_CONDS: { id: string; name: string }[] = [
   { id: 'enemy_hp_lt_30', name: '敵HP<30%' },
   { id: 'enemy_capturable', name: '敵が捕獲圏内' },
   { id: 'enemy_boss', name: '敵がボス' },
+  { id: 'enemy_count_ge_2', name: '敵が2体以上' },
   { id: 'enemy_count_ge_3', name: '敵が3体以上' },
+  { id: 'mp_gt_10', name: '自分MP>10%' },
   { id: 'mp_gt_30', name: '自分MP>30%' },
+  { id: 'mp_gt_60', name: '自分MP>60%' },
   { id: 'limit_ready', name: 'リミット可' },
   { id: 'not_buffed', name: '自分に強化なし' },
   { id: 'once', name: '1戦闘に1回' },
@@ -102,6 +105,7 @@ export interface GameState {
   maxFloorEver: number;
   maxDepthEver: number;
   superBosses: Record<string, number>; // 超ボス撃破回数
+  autoModes: Record<string, AutoMode>; // おまかせ作戦のモード（メンバーごと）
   rebirths: number;
   tp: number;
   board: Record<string, number>;

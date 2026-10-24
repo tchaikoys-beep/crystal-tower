@@ -1,3 +1,4 @@
+import { SUPPORTS, LEARNABLE_POOL } from '../data/jobs';
 import type { ItemInstance, Rarity, AffixRoll, ItemKind } from './types';
 import { RARITY_AFFIXES } from './types';
 import { Rng } from './rng';
@@ -37,6 +38,13 @@ export function generateItem(rng: Rng, floor: number, baseId: string, rarity: Ra
   const tier = tierOf(floor);
   const it: ItemInstance = { uid, base: baseId, rarity, tier, affixes: rollAffixes(rng, base.kind, tier, RARITY_AFFIXES[rarity], rarity), found: floor };
   if (rarity === 'ultima') it.unique = rng.pick(Object.keys(UNIQUES));
+  // FF9式：基礎に習得アビリティがない装備にも、ランダムで1つ付く（レアほど高コストのものが出る）
+  if (!base.learn && base.kind !== 'tome' && rng.chance(rarity === 'normal' ? 0.25 : 0.6)) {
+    const maxCost = 2 + tier + (rarity === 'normal' ? 0 : rarity === 'mithril' ? 1 : rarity === 'crystal' ? 2 : 4);
+    const pool = LEARNABLE_POOL.filter(k => SUPPORTS[k].cost <= maxCost);
+    const k = rng.pick(pool);
+    it.learn = { ability: k, ap: 40 + SUPPORTS[k].cost * 25 };
+  }
   return it;
 }
 export function rollDrops(rng: Rng, floor: number, enemies: { id: string; boss: boolean; captured: boolean; elite?: boolean }[], ctx: DropContext): DropResult {
