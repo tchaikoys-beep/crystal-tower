@@ -1,5 +1,7 @@
 # クリスタルタワー（コアプロトタイプ）
 
+遊ぶ: https://tchaikoys-beep.github.io/crystal-tower/ （iPhoneはSafariで開いて「ホーム画面に追加」）
+
 企画書: https://claude.ai/artifact/CHBCtzkeXHMcjbsQ4TFbAw
 
 - `npm run dev` 開発サーバ / `npm run build` ビルド（dist/）

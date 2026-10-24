@@ -76,7 +76,7 @@ export class App {
     if (saved) { try { (saved as any).run.underground ??= false; } catch { /* noop */ } }
     const pick = (id: string) => { this.s = G.newGame(id); toast(`${HEROES[id].name}で冒険を始める`); this.go('hub'); };
     return h('div', { class: 'scene' },
-      h('div', { class: 'win center', style: 'margin-top:40px' }, h('h1', {}, 'クリスタルタワー'), h('div', { class: 'dim' }, 'コアプロトタイプ v0.1 ／ 四角と文字で遊ぶ版')),
+      h('div', { class: 'win center', style: 'margin-top:40px' }, h('h1', {}, 'クリスタルタワー'), h('div', { class: 'dim' }, 'v1.5 ／ 公開版：https://tchaikoys-beep.github.io/crystal-tower/')),
       saved ? h('div', { class: 'win' }, btn(`つづきから（${saved.run.floor}階・転生${saved.rebirths}回）`, () => { this.s = saved; this.go(saved.run.floor === 1 && saved.run.eventIndex === 0 ? 'hub' : 'tower'); }, 'primary', false)) : null,
       h('div', { class: 'win' }, h('h2', {}, 'はじめから：英雄を選ぶ'),
         h('div', { class: 'list' }, ...['bartz', 'terra', 'cloud'].map(id => {
