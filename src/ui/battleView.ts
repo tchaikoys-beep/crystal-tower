@@ -19,6 +19,7 @@ export class BattleView {
   partyEl: HTMLElement;
   cmdEl: HTMLElement;
   topEl: HTMLElement;
+  navEl!: HTMLElement;
   floats: FloatText[] = [];
   flashes: Record<string, number> = {};
   poses: Record<string, { pose: HeroPose; until: number }> = {};
@@ -33,11 +34,14 @@ export class BattleView {
   constructor(public battle: Battle, public auto: boolean, public speed: number, public onEnd: () => void, public onSettings: (auto: boolean, speed: number) => void) {
     this.canvas = h('canvas', { width: 256, height: 224 }) as HTMLCanvasElement;
     this.ctx = this.canvas.getContext('2d')!;
-    this.topEl = h('div', { class: 'row', style: 'padding:4px 6px;gap:4px' });
+    this.topEl = h('div', { class: 'hdr' });
+    this.navEl = h('div', { class: 'dock-nav' });
     this.partyEl = h('div', { class: 'status-row', style: 'padding:0 6px' });
     this.logEl = h('div', { class: 'log' });
-    this.cmdEl = h('div', { class: 'cmds' });
-    this.root = h('div', { class: 'scene battle' }, this.topEl, this.canvas, this.partyEl, this.logEl, this.cmdEl);
+    this.cmdEl = h('div', { class: 'dock-actions cmds' });
+    this.root = h('div', { class: 'shell battle' },
+      h('div', { class: 'content' }, this.topEl, this.canvas, this.partyEl, this.logEl),
+      h('div', { class: 'dock' }, h('div', { class: 'dock-row' }, this.navEl, this.cmdEl)));
     preloadAll();
     this.renderTop();
     this.renderCommands();
@@ -48,11 +52,12 @@ export class BattleView {
   renderTop() {
     const b = this.battle;
     this.topEl.replaceChildren(
-      h('span', { class: 'dim' }, `${b.opt.floor}階 ${areaFor(b.opt.floor).name}`),
-      h('span', { class: 'law', style: 'font-size:12px' }, b.opt.law ? `ロウ:${b.opt.law.name}` : ''),
-      h('span', { class: 'grow' }),
+      h('b', {}, `${b.opt.floor}階 ${areaFor(b.opt.floor).name}`),
+      h('span', { class: 'law grow', style: 'font-size:12px' }, b.opt.law ? `ロウ:${b.opt.law.name}` : ''),
+    );
+    this.navEl.replaceChildren(
       btn(this.auto ? 'オート:ON' : 'オート:OFF', () => { this.auto = !this.auto; this.battle.opt.auto = this.auto; this.onSettings(this.auto, this.speed); this.renderTop(); if (this.auto && this.battle.pending) { const c = this.battle.pending; this.battle.pending = null; this.battle.act(c, this.battle.decideGambit(c) ?? this.battle.autoFallback(c)); this.menu = { level: 'root' }; this.renderCommands(); } }, 'small' + (this.auto ? ' sel' : '')),
-      btn(`x${this.speed}`, () => { this.speed = this.speed >= 4 ? 1 : this.speed * 2; this.onSettings(this.auto, this.speed); this.renderTop(); }, 'small'),
+      btn(`速度 x${this.speed}`, () => { this.speed = this.speed >= 4 ? 1 : this.speed * 2; this.onSettings(this.auto, this.speed); this.renderTop(); }, 'small'),
     );
   }
   loop = (now: number) => {
@@ -69,7 +74,7 @@ export class BattleView {
     this.renderParty();
     this.renderLog();
     if (b.result !== 'running') {
-      if (!this.endRendered) { this.endRendered = true; this.cmdEl.replaceChildren(h('div', { style: 'grid-column:1/4' }, btn(b.result === 'won' ? '勝利！ 結果へ' : b.result === 'fled' ? '逃げた' : '全滅…', () => this.onEnd(), 'primary'))); }
+      if (!this.endRendered) { this.endRendered = true; this.cmdEl.replaceChildren(h('div', { class: 'wide' }, btn(b.result === 'won' ? '勝利！ 結果へ' : b.result === 'fled' ? '逃げた' : '全滅…', () => this.onEnd(), 'primary'))); }
       this.raf = requestAnimationFrame(this.loop);
       return;
     }
@@ -195,7 +200,7 @@ export class BattleView {
   renderCommands() {
     const b = this.battle;
     const c = b.pending;
-    if (!c || b.result !== 'running') { this.cmdEl.replaceChildren(h('div', { class: 'dim center', style: 'grid-column:1/-1;padding:12px' }, this.auto ? 'オート戦闘中…' : 'ゲージ充填中…')); return; }
+    if (!c || b.result !== 'running') { this.cmdEl.replaceChildren(h('div', { class: 'dim center wide', style: 'padding:12px' }, this.auto ? 'オート戦闘中…' : 'ゲージ充填中…')); return; }
     const groups = [...new Set(c.commands.filter(k => k.group !== 'basic').map(k => k.group))];
     const el: HTMLElement[] = [];
     const vio = (cmd: Command) => b.violates(c, cmd);

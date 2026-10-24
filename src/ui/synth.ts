@@ -7,7 +7,7 @@ import { ITEMS } from '../data/items';
 import { AFFIXES } from '../data/affixes';
 import { tierOf } from '../core/formulas';
 
-export interface SynthCtx { s: GameState; itemLabel: (it: ItemInstance) => HTMLElement; render: () => void; back: () => void; header: (t: string, b: () => void) => HTMLElement }
+export interface SynthCtx { s: GameState; itemLabel: (it: ItemInstance) => HTMLElement; render: () => void; back: () => void; shell: (o: { title: string; back?: () => void; tabs?: HTMLElement[]; content: HTMLElement[] }) => HTMLElement }
 const state: { tab: string; from: string | null; affix: number | null; to: string | null } = { tab: '移植', from: null, affix: null, to: null };
 
 export function synthScreen(ctx: SynthCtx): HTMLElement {
@@ -21,13 +21,13 @@ export function synthScreen(ctx: SynthCtx): HTMLElement {
   if (state.tab === '移植') {
     const from = s.inventory.find(i => i.uid === state.from), to = s.inventory.find(i => i.uid === state.to);
     if (!from) {
-      body = h('div', { class: 'win' }, h('h2', {}, '1. 付加を取り出す装備（消滅する）'), h('div', { class: 'list', style: 'max-height:60vh' }, ...equipItems.filter(i => i.affixes.length).map(it => row(it, btn('選ぶ', () => { state.from = it.uid; state.affix = null; state.to = null; ctx.render(); }, 'small')))));
+      body = h('div', { class: 'win' }, h('h2', {}, '1. 付加を取り出す装備（消滅する）'), h('div', { class: 'list' }, ...equipItems.filter(i => i.affixes.length).map(it => row(it, btn('選ぶ', () => { state.from = it.uid; state.affix = null; state.to = null; ctx.render(); }, 'small')))));
     } else if (state.affix === null) {
       body = h('div', { class: 'win' }, h('h2', {}, '2. 移す付加を選ぶ'), ctx.itemLabel(from), h('div', { class: 'list' }, ...from.affixes.map((a, i) => h('div', { class: 'item' }, h('span', { class: 'grow' }, `${AFFIXES[a.id].name}：${AFFIXES[a.id].desc(a.value)}`), btn('これ', () => { state.affix = i; ctx.render(); }, 'small')))), btn('やり直す', () => { state.from = null; ctx.render(); }, 'small'));
     } else if (!to) {
       const roll = from.affixes[state.affix];
       const cands = equipItems.filter(i => i.uid !== from.uid && AFFIXES[roll.id].kinds.includes(ITEMS[i.base].kind) && !i.affixes.some(x => x.id === roll.id));
-      body = h('div', { class: 'win' }, h('h2', {}, `3. 「${AFFIXES[roll.id].name}」を移す先`), h('div', { class: 'list', style: 'max-height:55vh' }, ...cands.map(it => row(it, btn('ここへ', () => { state.to = it.uid; ctx.render(); }, 'small'), h('span', { class: 'dim', style: 'font-size:11px' }, costText(G.synthCost('transplant', it)))))), btn('やり直す', () => { state.from = null; state.affix = null; ctx.render(); }, 'small'));
+      body = h('div', { class: 'win' }, h('h2', {}, `3. 「${AFFIXES[roll.id].name}」を移す先`), h('div', { class: 'list' }, ...cands.map(it => row(it, btn('ここへ', () => { state.to = it.uid; ctx.render(); }, 'small'), h('span', { class: 'dim', style: 'font-size:11px' }, costText(G.synthCost('transplant', it)))))), btn('やり直す', () => { state.from = null; state.affix = null; ctx.render(); }, 'small'));
     } else {
       const max = { normal: 1, mithril: 1, crystal: 2, legend: 3, ultima: 4 }[to.rarity];
       const full = to.affixes.length >= max;
@@ -37,13 +37,13 @@ export function synthScreen(ctx: SynthCtx): HTMLElement {
         btn('やり直す', () => { state.from = null; state.affix = null; state.to = null; ctx.render(); }, 'small'));
     }
   } else if (state.tab === 'リロール') {
-    body = h('div', { class: 'win' }, h('div', { class: 'dim', style: 'font-size:12px' }, '付加を同じ数・同じティアで振り直す'), h('div', { class: 'list', style: 'max-height:65vh' }, ...equipItems.filter(i => i.affixes.length).map(it => row(it, btn(costText(G.synthCost('reroll', it)), () => { const e = G.reroll(s, it.uid); toast(e ?? '振り直した'); ctx.render(); }, 'small')))));
+    body = h('div', { class: 'win' }, h('div', { class: 'dim', style: 'font-size:12px' }, '付加を同じ数・同じティアで振り直す'), h('div', { class: 'list' }, ...equipItems.filter(i => i.affixes.length).map(it => row(it, btn(costText(G.synthCost('reroll', it)), () => { const e = G.reroll(s, it.uid); toast(e ?? '振り直した'); ctx.render(); }, 'small')))));
   } else if (state.tab === 'ランク上げ') {
-    body = h('div', { class: 'win' }, h('div', { class: 'dim', style: 'font-size:12px' }, `付加ティアを+1（上限：到達階のT${tierOf(s.maxFloorEver)}）。基礎値と付加値が伸びる`), h('div', { class: 'list', style: 'max-height:65vh' }, ...equipItems.filter(i => i.tier < tierOf(s.maxFloorEver)).map(it => row(it, btn(costText(G.synthCost('rankup', it)), () => { const e = G.rankUp(s, it.uid); toast(e ?? `T${it.tier}になった`); ctx.render(); }, 'small')))));
+    body = h('div', { class: 'win' }, h('div', { class: 'dim', style: 'font-size:12px' }, `付加ティアを+1（上限：到達階のT${tierOf(s.maxFloorEver)}）。基礎値と付加値が伸びる`), h('div', { class: 'list' }, ...equipItems.filter(i => i.tier < tierOf(s.maxFloorEver)).map(it => row(it, btn(costText(G.synthCost('rankup', it)), () => { const e = G.rankUp(s, it.uid); toast(e ?? `T${it.tier}になった`); ctx.render(); }, 'small')))));
   } else if (state.tab === '封印解除') {
-    body = h('div', { class: 'win' }, h('div', { class: 'dim', style: 'font-size:12px' }, '装備Lv制限を半分にする。転生直後に強い装備を使うために'), h('div', { class: 'list', style: 'max-height:65vh' }, ...equipItems.filter(i => !i.unsealed && i.tier > 1).map(it => row(it, btn(costText(G.synthCost('unseal', it)), () => { const e = G.unseal(s, it.uid); toast(e ?? '封印を解除した'); ctx.render(); }, 'small')))), !equipItems.some(i => !i.unsealed && i.tier > 1) ? h('div', { class: 'dim' }, 'T2以上の装備が対象（250階から出る）') : null);
+    body = h('div', { class: 'win' }, h('div', { class: 'dim', style: 'font-size:12px' }, '装備Lv制限を半分にする。転生直後に強い装備を使うために'), h('div', { class: 'list' }, ...equipItems.filter(i => !i.unsealed && i.tier > 1).map(it => row(it, btn(costText(G.synthCost('unseal', it)), () => { const e = G.unseal(s, it.uid); toast(e ?? '封印を解除した'); ctx.render(); }, 'small')))), !equipItems.some(i => !i.unsealed && i.tier > 1) ? h('div', { class: 'dim' }, 'T2以上の装備が対象（250階から出る）') : null);
   } else {
-    body = h('div', { class: 'win' }, h('div', { class: 'dim', style: 'font-size:12px' }, '装備を素材に。レアリティが高いほど魔晶石・オリハルコンが出る'), h('div', { class: 'list', style: 'max-height:65vh' }, ...equipItems.filter(i => !G.isEquipped(s, i.uid)).map(it => row(it, btn('分解', () => { const r = G.dismantle(s, it.uid); toast(r ?? '失敗'); ctx.render(); }, 'small')))));
+    body = h('div', { class: 'win' }, h('div', { class: 'dim', style: 'font-size:12px' }, '装備を素材に。レアリティが高いほど魔晶石・オリハルコンが出る'), h('div', { class: 'list' }, ...equipItems.filter(i => !G.isEquipped(s, i.uid)).map(it => row(it, btn('分解', () => { const r = G.dismantle(s, it.uid); toast(r ?? '失敗'); ctx.render(); }, 'small')))));
   }
-  return h('div', { class: 'scene' }, ctx.header('合成屋', ctx.back), h('div', { class: 'tabs' }, ...tabs.map(t => btn(t, () => { state.tab = t; ctx.render(); }, t === state.tab ? 'sel' : ''))), h('div', { class: 'win tight' }, bagText), body);
+  return ctx.shell({ title: '合成屋', back: ctx.back, tabs: tabs.map(t => btn(t, () => { state.tab = t; ctx.render(); }, t === state.tab ? 'sel' : '')), content: [h('div', { class: 'win tight' }, bagText), body] });
 }

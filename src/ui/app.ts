@@ -1,5 +1,5 @@
 // 画面遷移とメニュー類
-import { h, btn, bar, toast, selectEl } from './dom';
+import { h, btn, bar, toast, selectEl, type Child } from './dom';
 import { BattleView } from './battleView';
 import { synthScreen } from './synth';
 import { masteryLevel, masteryNext, MAX_MASTERY } from '../core/formulas';
@@ -66,33 +66,46 @@ export class App {
       case 'records': this.root.append(this.records()); break;
       case 'missions': this.root.append(this.missions()); break;
       case 'trials': this.root.append(this.trials()); break;
-      case 'synth': this.root.append(synthScreen({ s: this.s!, itemLabel: it => this.itemLabel(it), render: () => this.render(), back: () => this.go('hub'), header: (tt, b) => this.header(tt, b) })); break;
+      case 'synth': this.root.append(synthScreen({ s: this.s!, itemLabel: it => this.itemLabel(it), render: () => this.render(), back: () => this.go('hub'), shell: o => this.shell(o) })); break;
     }
-    window.scrollTo(0, 0);
+    this.root.querySelector('.content')?.scrollTo(0, 0);
   }
   // ---------- タイトル
   title(): HTMLElement {
     const saved = load();
     if (saved) { try { (saved as any).run.underground ??= false; } catch { /* noop */ } }
     const pick = (id: string) => { this.s = G.newGame(id); toast(`${HEROES[id].name}で冒険を始める`); this.go('hub'); };
-    return h('div', { class: 'scene' },
-      h('div', { class: 'win center', style: 'margin-top:40px' }, h('h1', {}, 'クリスタルタワー'), h('div', { class: 'dim' }, 'v1.5 ／ 公開版：https://tchaikoys-beep.github.io/crystal-tower/')),
-      saved ? h('div', { class: 'win' }, btn(`つづきから（${saved.run.floor}階・転生${saved.rebirths}回）`, () => { this.s = saved; this.go(saved.run.floor === 1 && saved.run.eventIndex === 0 ? 'hub' : 'tower'); }, 'primary', false)) : null,
-      h('div', { class: 'win' }, h('h2', {}, 'はじめから：英雄を選ぶ'),
+    return this.shell({ title: 'クリスタルタワー', actions: saved ? [btn(`つづきから（${saved.run.floor}階・転生${saved.rebirths}回）`, () => { this.s = saved; this.go(saved.run.floor === 1 && saved.run.eventIndex === 0 ? 'hub' : 'tower'); }, 'primary')] : [], content: [
+      h('div', { class: 'win center' }, h('h1', {}, 'クリスタルタワー'), h('div', { class: 'dim' }, 'v1.6 ／ 片手で遊ぶ無限塔RPG')),
+      h('div', { class: 'win' }, h('h2', {}, 'セーブデータ読み込み'), this.importBox()),
+      h('div', { class: 'win push' }, h('h2', {}, 'はじめから：英雄を選ぶ'),
         h('div', { class: 'list' }, ...['bartz', 'terra', 'cloud'].map(id => {
           const d = HEROES[id];
           return h('div', { class: 'item' }, faceEl(id, 40), h('div', { class: 'grow' }, h('div', {}, `${d.name} `, h('span', { class: 'pill' }, d.title)), h('div', { class: 'dim' }, `固有ジョブ：${JOBS[d.innateJob].name}／リミット：${SKILLS[d.limit].name}`)), btn('選ぶ', () => pick(id), 'small'));
         }))),
-      h('div', { class: 'win' }, h('h2', {}, 'セーブデータ読み込み'), this.importBox()),
-    );
+    ] });
   }
   importBox(): HTMLElement {
     const ta = h('textarea', { rows: 3, placeholder: 'エクスポートした文字列を貼る' }) as HTMLTextAreaElement;
     return h('div', {}, ta, btn('読み込む', () => { const s = importSave(ta.value); if (!s) { toast('読み込めなかった'); return; } this.s = s; save(s); this.go('hub'); }, 'small'));
   }
-  header(title: string, back?: () => void): HTMLElement {
-    const s = this.s!;
-    return h('div', { class: 'win tight row hdr' }, h('b', { class: 'grow' }, title), h('span', { class: 'dim' }, `${s.gil}G`), h('span', { class: 'dim' }, `転生${s.rebirths}`), h('span', { class: 'dim' }, `TP${s.tp}`), back ? btn('戻る', back, 'small back') : null);
+  // 画面の共通骨格：上＝スクロールする内容、下＝親指で届く操作ドック（右利き既定）
+  shell(o: { title: string; back?: () => void; tabs?: HTMLElement[]; nav?: HTMLElement[]; actions?: HTMLElement[]; content: Child[] }): HTMLElement {
+    const s = this.s;
+    const hdr = h('div', { class: 'hdr' }, h('b', { class: 'grow' }, o.title), s ? h('span', { class: 'dim' }, `${s.gil}G　転生${s.rebirths}　TP${s.tp}`) : null);
+    const content = h('div', { class: 'content' }, hdr, ...o.content);
+    const actions = [...(o.actions ?? [])];
+    if (o.back) actions.push(btn('戻る', o.back, 'back'));
+    const dock = h('div', { class: 'dock' },
+      o.tabs?.length ? h('div', { class: 'dock-tabs' }, ...o.tabs) : null,
+      h('div', { class: 'dock-row' }, h('div', { class: 'dock-nav' }, ...(o.nav ?? [])), h('div', { class: 'dock-actions' }, ...actions)));
+    return h('div', { class: 'shell' }, content, dock);
+  }
+  tabBtns(tabs: string[], cur: string, set: (t: string) => void): HTMLElement[] { return tabs.map(t => btn(t, () => { set(t); this.render(); }, t === cur ? 'sel' : '')); }
+  // 画面下から出る選択シート（ドックの上に重なる）
+  sheet(title: string, body: Child[], onClose: () => void): HTMLElement {
+    const el = h('div', { class: 'sheet' }, h('div', { class: 'sheet-box' }, h('h2', {}, title), ...body, h('div', { class: 'dock-row' }, h('div', { class: 'dock-nav' }), h('div', { class: 'dock-actions' }, btn('やめる', () => { el.remove(); onClose(); }, 'back')))));
+    return el;
   }
   partyBars(): HTMLElement {
     const cs = G.partyCombatants(this.s!);
@@ -102,67 +115,69 @@ export class App {
   hub(): HTMLElement {
     const s = this.s!;
     const warps = s.run.warps.filter(w => w > 1).sort((a, b) => a - b);
-    return h('div', { class: 'scene' }, this.header('クリスタルの間（1階）'),
-      h('div', { class: 'win' }, h('div', { class: 'dim' }, `最高到達 ${s.maxFloorEver}階 ／ 今周の最高 ${s.run.maxFloor}階 ／ 転生ポイント見込み ${computeTP(s)}`), this.partyBars()),
-      h('div', { class: 'win grid2' },
+    return this.shell({ title: 'クリスタルの間（1階）',
+      nav: [btn('メニュー', () => this.go('menu'), 'small'), btn('記録・設定', () => this.go('records'), 'small')],
+      actions: [
         btn('塔へ登る（1階から）', () => { G.fullRestore(s); if (s.run.floor !== 1) G.warpTo(s, 1); this.go('tower'); }, 'primary'),
-        btn('ワープ' + (warps.length ? `（最大${warps[warps.length - 1]}階）` : ''), () => this.warpDialog(), '', !warps.length),
-        btn('メニュー（編成・装備・作戦）', () => this.go('menu')),
-        btn('ショップ', () => this.go('shop')),
-        btn('合成屋', () => this.go('synth')),
-        btn(`依頼掲示板${s.missions?.active.some(m => G.missionDone(s, m)) ? '（達成あり！）' : ''}`, () => { G.refreshOffers(s); this.go('missions'); }),
-        btn(`魔獣牧場（${s.monsters.length}/${G.maxRanch(s)}）`, () => this.go('ranch')),
-        btn('転生の祭壇', () => this.go('rebirth')),
-        btn('記録・図鑑・セーブ', () => this.go('records')),
-        btn('試練の間（超ボス）', () => this.go('trials'), '', s.maxFloorEver < 1000 && s.rebirths < 10),
-        G.undergroundUnlocked(s) ? btn(`裏タワーへ降りる（最深 地下${s.maxDepthEver}階）`, () => { G.fullRestore(s); G.enterUnderground(s, 1); this.go('tower'); }, 'bad') : null,
-      ),
-      h('div', { class: 'win dim', style: 'font-size:12px' }, '拠点に戻ると全員回復。10階ごとのワープ地点に戻れる。装備のアビリティは戦闘で貯まるAPで覚える。'),
-    );
+        btn('ワープ' + (warps.length ? `（〜${warps[warps.length - 1]}階）` : ''), () => this.warpDialog(), '', !warps.length),
+        G.undergroundUnlocked(s) ? btn(`裏タワー（地下${s.maxDepthEver}階）`, () => { G.fullRestore(s); G.enterUnderground(s, 1); this.go('tower'); }, 'bad') : null,
+      ].filter(Boolean) as HTMLElement[],
+      content: [
+        h('div', { class: 'win' }, h('div', { class: 'dim' }, `最高到達 ${s.maxFloorEver}階 ／ 今周の最高 ${s.run.maxFloor}階 ／ 転生ポイント見込み ${computeTP(s)}`), this.partyBars()),
+        h('div', { class: 'win dim', style: 'font-size:12px' }, '拠点に戻ると全員回復。10階ごとのワープ地点に戻れる。装備のアビリティは戦闘で貯まるAPで覚える。'),
+        h('div', { class: 'win grid2 push' },
+          btn('ショップ', () => this.go('shop')),
+          btn('合成屋', () => this.go('synth')),
+          btn(`依頼掲示板${s.missions?.active.some(m => G.missionDone(s, m)) ? '（達成！）' : ''}`, () => { G.refreshOffers(s); this.go('missions'); }),
+          btn(`魔獣牧場（${s.monsters.length}/${G.maxRanch(s)}）`, () => this.go('ranch')),
+          btn('転生の祭壇', () => this.go('rebirth')),
+          btn('試練の間（超ボス）', () => this.go('trials'), '', s.maxFloorEver < 1000 && s.rebirths < 10),
+        ),
+      ] });
   }
   warpDialog() {
     const s = this.s!;
     const warps = [...new Set([1, ...s.run.warps])].sort((a, b) => a - b);
     const ugw = G.undergroundUnlocked(s) ? [...new Set([1, ...s.run.undergroundWarps])].sort((a, b) => a - b) : [];
-    const box = h('div', { class: 'win' }, h('h2', {}, 'ワープ先'), h('div', { class: 'grid3' }, ...warps.map(w => btn(w === 1 ? '拠点' : `${w}階`, () => { G.warpTo(s, w, false); box.remove(); this.go(w === 1 ? 'hub' : 'tower'); }))),
-      ugw.length ? h('div', {}, h('h2', { style: 'margin-top:6px' }, '裏タワー'), h('div', { class: 'grid3' }, ...ugw.map(w => btn(`地下${w}階`, () => { G.warpTo(s, w, true); box.remove(); this.go('tower'); }, 'bad')))) : null,
-      btn('やめる', () => box.remove(), 'small'));
-    this.root.prepend(box);
+    const sheet: HTMLElement = this.sheet('ワープ先', [
+      h('div', { class: 'grid3' }, ...warps.map(w => btn(w === 1 ? '拠点' : `${w}階`, () => { G.warpTo(s, w, false); sheet.remove(); this.go(w === 1 ? 'hub' : 'tower'); }))),
+      ugw.length ? h('div', {}, h('h2', { style: 'margin-top:6px' }, '裏タワー'), h('div', { class: 'grid3' }, ...ugw.map(w => btn(`地下${w}階`, () => { G.warpTo(s, w, true); sheet.remove(); this.go('tower'); }, 'bad')))) : null,
+    ], () => {});
+    this.root.append(sheet);
   }
   // ---------- 塔
   tower(): HTMLElement {
     const s = this.s!;
     const ev = G.currentEvent(s);
     const area = areaFor(s.run.floor);
-    const lines: HTMLElement[] = [];
+    const info: HTMLElement[] = []; const acts: HTMLElement[] = [];
+    const nm = (e: string) => e.endsWith('+') ? '＋' + MONSTERS[e.slice(0, -1)].name : MONSTERS[e].name;
     if (s.run.cleared) {
-      lines.push(h('div', { class: 'good' }, 'この階の守護者を倒した。階段が現れている。'));
-      lines.push(btn(s.run.underground ? `地下${s.run.floor + 1}階へ降りる` : `${s.run.floor + 1}階へ登る`, () => { const msg = G.climb(s); if (msg) toast(msg, 4000); this.render(); }, 'primary'));
+      info.push(h('div', { class: 'good' }, 'この階の守護者を倒した。階段が現れている。'));
+      acts.push(btn(s.run.underground ? `地下${s.run.floor + 1}階へ降りる` : `${s.run.floor + 1}階へ登る`, () => { const msg = G.climb(s); if (msg) toast(msg, 4000); this.render(); }, 'primary'));
     } else if (!ev) {
-      lines.push(h('div', {}, '…'));
+      info.push(h('div', {}, '…'));
     } else if (ev.type === 'battle') {
-      lines.push(h('div', {}, '敵の気配：', h('b', {}, ev.enemies.map(e => (e.endsWith('+') ? '＋' + MONSTERS[e.slice(0, -1)].name : MONSTERS[e].name)).join('、'))));
-      lines.push(h('div', { class: 'grid2' }, btn('戦う', () => this.startBattle(ev), 'primary'), btn('やり過ごす', () => { G.skipEvent(s); this.render(); })));
+      info.push(h('div', {}, '敵の気配：', h('b', {}, ev.enemies.map(nm).join('、'))));
+      acts.push(btn('戦う', () => this.startBattle(ev), 'primary'), btn('やり過ごす', () => { G.skipEvent(s); this.render(); }));
     } else if (ev.type === 'guardian') {
       const label = ev.boss === 'area' ? 'エリアボス' : ev.boss === 'mid' ? '中ボス' : '階段の守護者';
-      lines.push(h('div', { class: 'bad' }, `${label}：`, h('b', {}, ev.enemies.map(e => (e.endsWith('+') ? '＋' + MONSTERS[e.slice(0, -1)].name : MONSTERS[e].name)).join('、'))));
-      lines.push(btn(`${label}に挑む`, () => this.startBattle(ev), 'primary'));
+      info.push(h('div', { class: 'bad' }, `${label}：`, h('b', {}, ev.enemies.map(nm).join('、'))));
+      acts.push(btn(`${label}に挑む`, () => this.startBattle(ev), 'primary'));
     } else {
-      lines.push(h('div', {}, ev.type === 'treasure' ? '宝箱がある' : '回復の泉がある'));
-      lines.push(btn('調べる', () => { const m = G.resolveSimpleEvent(s); if (m) toast(m, 3500); this.render(); }, 'primary'));
+      info.push(h('div', {}, ev.type === 'treasure' ? '宝箱がある' : '回復の泉がある'));
+      acts.push(btn('調べる', () => { const m = G.resolveSimpleEvent(s); if (m) toast(m, 3500); this.render(); }, 'primary'));
     }
     const remaining = s.run.events.slice(s.run.eventIndex).map(e => e.type === 'battle' ? '⚔' : e.type === 'guardian' ? '☠' : e.type === 'treasure' ? '▣' : '♨').join(' ');
     const ug = s.run.underground;
-    return h('div', { class: 'scene' }, this.header(ug ? `地下${s.run.floor}階 混沌（換算${G.effFloor(s)}階）` : `${s.run.floor}階 ${area.name}（${area.motif}）`),
-      h('div', { class: 'win' }, this.lawPanel(),
-        h('div', { class: 'dim', style: 'font-size:12px' }, `この階の残り：${remaining || 'なし'}`)),
-      h('div', { class: 'win' }, this.partyBars()),
-      h('div', { class: 'win' }, ...lines.filter(l => l.tagName !== 'BUTTON' && !l.classList.contains('grid2'))),
-      h('div', { class: 'footer' },
-        h('div', { class: 'nav' }, btn('メニュー', () => this.go('menu'), 'small'), btn('テレポ', () => this.warpDialog(), 'small'), btn('拠点へ', () => { G.toHub(s); this.go('hub'); }, 'small')),
-        h('div', { class: 'acts' }, ...lines.filter(l => l.tagName === 'BUTTON' || l.classList.contains('grid2')).flatMap(l => l.classList.contains('grid2') ? [...l.children] as HTMLElement[] : [l])),
-      ),
-    );
+    return this.shell({ title: ug ? `地下${s.run.floor}階 混沌（換算${G.effFloor(s)}階）` : `${s.run.floor}階 ${area.name}（${area.motif}）`,
+      nav: [btn('メニュー', () => this.go('menu'), 'small'), btn('テレポ', () => this.warpDialog(), 'small'), btn('拠点へ', () => { G.toHub(s); this.go('hub'); }, 'small')],
+      actions: acts,
+      content: [
+        h('div', { class: 'win' }, this.lawPanel(), h('div', { class: 'dim', style: 'font-size:12px' }, `この階の残り：${remaining || 'なし'}`)),
+        h('div', { class: 'win' }, this.partyBars()),
+        h('div', { class: 'win push' }, ...info),
+      ] });
   }
   startBattle(ev: FloorEvent) {
     const s = this.s!;
@@ -183,9 +198,9 @@ export class App {
     this.battle = null; this.battleEvent = null;
     if (this.view) { this.view.destroy(); this.view = null; }
     this.autosave();
-    const box = h('div', { class: 'scene' }, h('div', { class: 'win' }, h('h2', {}, b.result === 'won' ? '戦闘結果' : b.result === 'fled' ? '逃走' : '全滅'),
-      ...sum.lines.map(l => h('div', { class: l.includes('手に入れた') ? 'good' : l.includes('カード') ? 'law' : '' }, l)),
-      btn('OK', () => { if (b.result === 'lost' || (ev.type === 'guardian' && ev.superBoss)) { if (ev.type === 'guardian' && ev.superBoss) G.toHub(s); this.go('hub'); } else this.go('tower'); }, 'primary')));
+    const box = this.shell({ title: b.result === 'won' ? '戦闘結果' : b.result === 'fled' ? '逃走' : '全滅',
+      actions: [btn('OK', () => { if (b.result === 'lost' || (ev.type === 'guardian' && ev.superBoss)) { if (ev.type === 'guardian' && ev.superBoss) G.toHub(s); this.go('hub'); } else this.go('tower'); }, 'primary')],
+      content: [h('div', { class: 'win' }, ...sum.lines.map(l => h('div', { class: l.includes('手に入れた') ? 'good' : l.includes('カード') ? 'law' : '' }, l)))] });
     this.root.replaceChildren(box);
   }
   // ---------- メニュー
@@ -194,8 +209,7 @@ export class App {
     const tabs = ['編成', 'ステータス', '装備', 'アビリティ', '作戦', '持ち物'];
     const back = () => { this.partyDraft = null; this.go(s.run.floor === 1 && s.run.eventIndex === 0 && !s.run.cleared ? 'hub' : 'tower'); };
     const body = this.menuTab === '編成' ? this.partyTab() : this.menuTab === 'ステータス' ? this.statusTab() : this.menuTab === '装備' ? this.equipTab() : this.menuTab === 'アビリティ' ? this.abilityTab() : this.menuTab === '作戦' ? this.gambitTab() : this.bagTab();
-    return h('div', { class: 'scene' }, this.header('メニュー', back),
-      h('div', { class: 'tabs' }, ...tabs.map(t => btn(t, () => { this.menuTab = t; this.render(); }, t === this.menuTab ? 'sel' : ''))), body);
+    return this.shell({ title: 'メニュー', back, tabs: this.tabBtns(tabs, this.menuTab, x => { this.menuTab = x; }), content: [body] });
   }
   memberName(key: string): string {
     if (key.startsWith('h:')) return HEROES[key.slice(2)].name;
@@ -418,13 +432,13 @@ export class App {
     const tabs = ['買う', '売る'];
     let body: HTMLElement;
     if (this.shopTab === '買う') {
-      body = h('div', { class: 'win' }, h('div', { class: 'list', style: 'max-height:70vh' }, ...G.shopList(s).map(id => { const b = ITEMS[id]; return h('div', { class: 'item' }, iconEl(id), h('div', { class: 'grow' }, h('div', {}, b.name, h('span', { class: 'dim' }, ` ${b.price}G`), (s.bag[id] ?? 0) > 0 ? h('span', { class: 'pill' }, `所持${s.bag[id]}`) : null), h('div', { class: 'dim', style: 'font-size:11px' }, b.effect ? describeEffect(b) : [b.power ? `攻${b.power}` : '', b.def ? `防${b.def}` : '', b.mdef ? `魔防${b.mdef}` : '', b.learn ? `習得:${G.learnName(b.learn)}` : ''].filter(Boolean).join(' '))), btn('買う', () => { const e = G.buyItem(s, id); toast(e ?? `${b.name}を買った`); this.render(); }, 'small', s.gil < b.price)); })));
+      body = h('div', { class: 'win' }, h('div', { class: 'list' }, ...G.shopList(s).map(id => { const b = ITEMS[id]; return h('div', { class: 'item' }, iconEl(id), h('div', { class: 'grow' }, h('div', {}, b.name, h('span', { class: 'dim' }, ` ${b.price}G`), (s.bag[id] ?? 0) > 0 ? h('span', { class: 'pill' }, `所持${s.bag[id]}`) : null), h('div', { class: 'dim', style: 'font-size:11px' }, b.effect ? describeEffect(b) : [b.power ? `攻${b.power}` : '', b.def ? `防${b.def}` : '', b.mdef ? `魔防${b.mdef}` : '', b.learn ? `習得:${G.learnName(b.learn)}` : ''].filter(Boolean).join(' '))), btn('買う', () => { const e = G.buyItem(s, id); toast(e ?? `${b.name}を買った`); this.render(); }, 'small', s.gil < b.price)); })));
     } else {
       const items = s.inventory.filter(it => !G.isEquipped(s, it.uid));
       body = h('div', { class: 'win' }, h('div', { class: 'row' }, btn(`ノーマル品を一括売却（${items.filter(i => i.rarity === 'normal').length}個）`, () => { let g = 0; for (const it of items.filter(i => i.rarity === 'normal')) { g += G.sellPrice(it); G.sellItem(s, it.uid); } toast(`${g}Gで売った`); this.render(); }, 'small')),
-        h('div', { class: 'list', style: 'max-height:65vh' }, ...items.map(it => h('div', { class: 'item' }, this.itemLabel(it), btn(`${G.sellPrice(it)}G`, () => { G.sellItem(s, it.uid); this.render(); }, 'small')))));
+        h('div', { class: 'list' }, ...items.map(it => h('div', { class: 'item' }, this.itemLabel(it), btn(`${G.sellPrice(it)}G`, () => { G.sellItem(s, it.uid); this.render(); }, 'small')))));
     }
-    return h('div', { class: 'scene' }, this.header('ショップ', () => this.go('hub')), h('div', { class: 'tabs' }, ...tabs.map(t => btn(t, () => { this.shopTab = t; this.render(); }, t === this.shopTab ? 'sel' : ''))), body);
+    return this.shell({ title: 'ショップ', back: () => this.go('hub'), tabs: this.tabBtns(tabs, this.shopTab, x => { this.shopTab = x; }), content: [body] });
   }
   // ---------- 牧場
   ranch(): HTMLElement {
@@ -467,10 +481,13 @@ export class App {
           s.rebirths >= 5 ? btn(fuseSel === m.uid ? '融合先を選択中' : '融合', () => { (this as any)._fuse = fuseSel === m.uid ? null : m.uid; this.render(); }, 'small' + (fuseSel === m.uid ? ' sel' : '')) : null,
           fuseSel && fuseSel !== m.uid ? btn('この子を取り込む', () => { const base = s.monsters.find(x => x.uid === fuseSel)!; if (!confirm(`${MONSTERS[base.id].name}に${c.name}を融合する？${c.name}は消える`)) return; const e = G.fuseMonsters(s, fuseSel, m.uid); toast(e ?? '融合した。特性と絆の半分を引き継いだ'); (this as any)._fuse = null; this.render(); }, 'small bad') : null));
     });
-    return h('div', { class: 'scene' }, this.header(`魔獣牧場 ${s.monsters.length}/${G.maxRanch(s)}`, () => this.go('hub')),
-      compareBox,
-      h('div', { class: 'win' }, h('div', { class: 'dim', style: 'font-size:12px' }, `編成はメニューの「編成」から。絆は前線で戦うと上がり、転生しても残る。等級：＋強個体（5%出現・守護者は確定）、●レア。守護者を捕まえると＋確定。融合（A＋B→A。Bの特性1つと絆の半分を継承、特性は4つまで）は${s.rebirths >= 5 ? '解放済み' : '転生5回で解放'}。`),
-        h('div', { class: 'list', style: cmp.length >= 2 ? 'max-height:45vh' : 'max-height:75vh' }, ...(rows.length ? rows : [h('div', { class: 'dim' }, 'まだ仲間がいない。魔獣使い（20階で解放）の「とらえる」か「魔石のケージ」で捕まえる。')]))));
+    return this.shell({ title: `魔獣牧場 ${s.monsters.length}/${G.maxRanch(s)}`, back: () => this.go('hub'),
+      actions: cmp.length ? [btn('比較を解除', () => { cmp.length = 0; this.render(); }, 'small')] : [],
+      content: [
+        compareBox,
+        h('div', { class: 'win' }, h('div', { class: 'dim', style: 'font-size:12px' }, `編成はメニューの「編成」から。絆は前線で戦うと上がり、転生しても残る。等級：＋強個体（5%出現・守護者は確定）、●レア。守護者を捕まえると＋確定。融合（A＋B→A。Bの特性1つと絆の半分を継承、特性は4つまで）は${s.rebirths >= 5 ? '解放済み' : '転生5回で解放'}。`)),
+        h('div', { class: 'win' }, h('div', { class: 'list' }, ...(rows.length ? rows : [h('div', { class: 'dim' }, 'まだ仲間がいない。魔獣使い（20階で解放）の「とらえる」か「魔石のケージ」で捕まえる。')]))),
+      ] });
   }
 
   // ---------- 依頼掲示板
@@ -479,18 +496,18 @@ export class App {
     const ms = s.missions;
     const rewardText = (m: typeof ms.active[number]) => [`${m.reward.gil}G`, m.reward.tp ? `${m.reward.tp}TP` : '', m.reward.item ? `${RARITY_JP[m.reward.item]}装備` : '', ...Object.entries(m.reward.bag ?? {}).map(([k, v]) => `${ITEMS[k].name}×${v}`)].filter(Boolean).join('、');
     const progress = (m: typeof ms.active[number]) => m.type === 'collect' ? `${Math.min(m.count, s.bag[m.target!] ?? 0)}/${m.count}` : m.type === 'reach' ? `${Math.max(s.run.maxFloor, s.maxFloorEver)}/${m.count}階` : `${m.progress}/${m.count}`;
-    return h('div', { class: 'scene' }, this.header('依頼掲示板', () => this.go('hub')),
+    return this.shell({ title: '依頼掲示板', back: () => this.go('hub'), content: [
       h('div', { class: 'win' }, h('h2', {}, `受注中（${ms.active.length}/3）　達成数 ${ms.completed}`),
         h('div', { class: 'list', style: 'max-height:none' }, ...ms.active.map(m => { const done = G.missionDone(s, m); return h('div', { class: 'item' + (done ? ' sel' : ''), style: 'flex-wrap:wrap' }, h('div', { class: 'grow' }, h('div', {}, m.title), h('div', { class: 'dim', style: 'font-size:11px' }, `進捗 ${progress(m)}　報酬：${rewardText(m)}`)), done ? btn('報酬を受け取る', () => { const r = G.claimMission(s, m.id); toast(r ?? '', 4000); this.render(); }, 'small primary') : btn('破棄', () => { G.abandonMission(s, m.id); this.render(); }, 'small')); }), !ms.active.length ? h('div', { class: 'dim' }, '受注中の依頼なし') : null)),
       h('div', { class: 'win' }, h('h2', {}, 'モンブランの依頼'), h('div', { class: 'dim', style: 'font-size:11px' }, '拠点に戻るたびに補充される。受けると進捗が記録される'),
-        h('div', { class: 'list', style: 'max-height:none' }, ...ms.offers.map(m => h('div', { class: 'item', style: 'flex-wrap:wrap' }, h('div', { class: 'grow' }, h('div', {}, m.title), h('div', { class: 'dim', style: 'font-size:11px' }, `報酬：${rewardText(m)}`)), btn('受ける', () => { const e = G.acceptMission(s, m.id); if (e) toast(e); this.render(); }, 'small', ms.active.length >= 3))))));
+        h('div', { class: 'list', style: 'max-height:none' }, ...ms.offers.map(m => h('div', { class: 'item', style: 'flex-wrap:wrap' }, h('div', { class: 'grow' }, h('div', {}, m.title), h('div', { class: 'dim', style: 'font-size:11px' }, `報酬：${rewardText(m)}`)), btn('受ける', () => { const e = G.acceptMission(s, m.id); if (e) toast(e); this.render(); }, 'small', ms.active.length >= 3))))) ] });
   }
   // ---------- 試練の間
   trials(): HTMLElement {
     const s = this.s!;
-    return h('div', { class: 'scene' }, this.header('試練の間', () => this.go('hub')),
+    return this.shell({ title: '試練の間', back: () => this.go('hub'), content: [
       h('div', { class: 'win' }, h('div', { class: 'dim', style: 'font-size:12px' }, '超ボスはロウなし。初回撃破で大きな報酬、2回目以降はアルテマ装備と少量のTP。全滅してもペナルティはギル半減のみ'), this.partyBars()),
-      ...SUPER_BOSSES.map(b => { const av = G.superBossAvailable(s, b.id); const n = s.superBosses?.[b.id] ?? 0; return h('div', { class: 'win' }, h('div', { class: 'row' }, h('b', { class: 'grow' }, b.name), h('span', { class: 'pill' }, `換算${b.scale}階`), n ? h('span', { class: 'pill' }, `撃破${n}`) : null), h('div', { class: 'dim', style: 'font-size:12px' }, `条件：${b.cond}　報酬：${b.rewardText}`), btn(av.ok ? `${b.name}に挑む` : av.reason!, () => this.startBattle(G.superBossEvent(b.id)), av.ok ? 'primary' : '', !av.ok)); }));
+      ...SUPER_BOSSES.map(b => { const av = G.superBossAvailable(s, b.id); const n = s.superBosses?.[b.id] ?? 0; return h('div', { class: 'win' }, h('div', { class: 'row' }, h('b', { class: 'grow' }, b.name), h('span', { class: 'pill' }, `換算${b.scale}階`), n ? h('span', { class: 'pill' }, `撃破${n}`) : null), h('div', { class: 'dim', style: 'font-size:12px' }, `条件：${b.cond}　報酬：${b.rewardText}`), btn(av.ok ? `${b.name}に挑む` : av.reason!, () => this.startBattle(G.superBossEvent(b.id)), av.ok ? 'primary' : '', !av.ok)); })] });
   }
   // ---------- 転生
   rebirth(): HTMLElement {
@@ -516,21 +533,21 @@ export class App {
       body = h('div', {}, h('div', { class: 'win' }, h('h2', {}, `TP ${s.tp}`), h('div', { class: 'dim', style: 'font-size:12px' }, '隣接する開放済みマスから買える。重ね買いはコスト×1.5。')),
         ...cats.map(cat => h('div', { class: 'win' }, h('h2', {}, cat), h('div', { class: 'list', style: 'max-height:none' }, ...BOARD.filter(b => b.cat === cat && b.id !== 'start').map(b => { const n = s.board[b.id] ?? 0; const cb = canBuy(s, b.id); return h('div', { class: 'item' }, h('div', { class: 'grow' }, h('div', {}, `${b.name} `, h('span', { class: 'pill' }, `${n}/${b.max}`)), h('div', { class: 'dim', style: 'font-size:11px' }, b.desc)), btn(`${cb.cost}TP`, () => { if (buyNode(s, b.id)) toast('開放した'); this.render(); }, 'small', !cb.ok), !cb.ok && cb.reason !== 'TP不足' ? h('span', { class: 'dim', style: 'font-size:11px' }, cb.reason) : null); })))));
     }
-    return h('div', { class: 'scene' }, this.header('転生の祭壇', () => this.go('hub')), h('div', { class: 'tabs' }, ...tabs.map(t => btn(t, () => { this.rebirthTab = t; this.render(); }, t === this.rebirthTab ? 'sel' : ''))), body);
+    return this.shell({ title: '転生の祭壇', back: () => this.go('hub'), tabs: this.tabBtns(tabs, this.rebirthTab, x => { this.rebirthTab = x; }), content: [body] });
   }
   // ---------- 記録
   records(): HTMLElement {
     const s = this.s!;
     const ta = h('textarea', { rows: 4 }) as HTMLTextAreaElement;
     ta.value = exportSave(s);
-    return h('div', { class: 'scene' }, this.header('記録・図鑑・セーブ', () => this.go('hub')),
+    return this.shell({ title: '記録・図鑑・セーブ', back: () => this.go('hub'), content: [
       h('div', { class: 'win' }, h('h2', {}, '記録'), h('div', { class: 'dim' }, `最高到達 ${s.maxFloorEver}階 ／ 裏タワー最深 地下${s.maxDepthEver ?? 0}階 ／ 転生 ${s.rebirths}回 ／ 戦闘 ${s.stats.battles} ／ 撃破 ${s.stats.kills} ／ 捕獲 ${s.stats.captures}`),
         h('div', { class: 'dim', style: 'font-size:12px' }, s.stats.rebirthLog.map((r, i) => `${i + 1}周目：${r.floor}階 +${r.tp}TP`).join('　'))),
       h('div', { class: 'win' }, h('h2', {}, '図鑑'), h('div', { class: 'dim', style: 'font-size:12px' }, `装備 ${s.codex.items.length}/${Object.values(ITEMS).filter(i => i.kind !== 'consumable' && i.kind !== 'material').length}　付加 ${s.codex.affixes.length}/${Object.keys(AFFIXES).length}　敵 ${s.codex.monsters.length}/${Object.keys(MONSTERS).length}`),
         h('div', { class: 'dim', style: 'font-size:12px' }, '敵：' + s.codex.monsters.map(m => MONSTERS[m].name).join('、'))),
       h('div', { class: 'win' }, h('h2', {}, 'セーブ書き出し'), h('div', { class: 'dim', style: 'font-size:12px' }, '端末を跨ぐときはこの文字列をコピーして、タイトル画面で読み込む。'), ta, btn('コピー', () => { navigator.clipboard?.writeText(ta.value).then(() => toast('コピーした')); }, 'small')),
       h('div', { class: 'win' }, h('h2', {}, '設定'), h('div', { class: 'row' }, h('span', { class: 'dim' }, '操作する手：'), btn('右手（ボタンは右寄せ）', () => { s.settings.hand = 'right'; this.render(); }, 'small' + (s.settings.hand === 'right' ? ' sel' : '')), btn('左手', () => { s.settings.hand = 'left'; this.render(); }, 'small' + (s.settings.hand === 'left' ? ' sel' : '')))),
-      h('div', { class: 'win' }, btn('データを消して最初から', () => { if (confirm('本当に消す？')) { clear(); this.s = null; this.go('title'); } }, 'small')));
+      h('div', { class: 'win' }, btn('データを消して最初から', () => { if (confirm('本当に消す？')) { clear(); this.s = null; this.go('title'); } }, 'small'))] });
   }
 }
 function describeEffect(b: typeof ITEMS[string]): string {
