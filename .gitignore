@@ -1,0 +1,7 @@
+node_modules/
+dist/
+art/dl*/
+art/incoming/
+art/__pycache__/
+*.zip
+.DS_Store
