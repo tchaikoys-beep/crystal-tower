@@ -37,7 +37,7 @@ export class BattleView {
     this.partyEl = h('div', { class: 'status-row', style: 'padding:0 6px' });
     this.logEl = h('div', { class: 'log' });
     this.cmdEl = h('div', { class: 'cmds' });
-    this.root = h('div', { class: 'scene' }, this.topEl, this.canvas, this.partyEl, this.logEl, this.cmdEl);
+    this.root = h('div', { class: 'scene battle' }, this.topEl, this.canvas, this.partyEl, this.logEl, this.cmdEl);
     preloadAll();
     this.renderTop();
     this.renderCommands();
