@@ -8,6 +8,7 @@ textarea, input { -webkit-user-select:text; user-select:text; }
 #app { position:fixed; inset:0; display:flex; flex-direction:column; max-width:520px; margin:0 auto; padding:var(--sat) var(--sar) 0 var(--sal); }
 .shell { flex:1; display:flex; flex-direction:column; min-height:0; }
 .content { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; padding-bottom:8px; }
+.content > .spacer { flex:1 0 0; }
 .content > .push { margin-top:auto; }
 .hdr { display:flex; gap:8px; align-items:center; padding:6px 10px 4px; font-size:14px; }
 .hdr b { font-size:15px; }
@@ -17,6 +18,11 @@ textarea, input { -webkit-user-select:text; user-select:text; }
 .dock-tabs { display:flex; gap:4px; justify-content:flex-end; overflow-x:auto; scrollbar-width:none; }
 .dock-tabs::-webkit-scrollbar { display:none; }
 .dock-tabs button { flex:1 0 auto; padding:6px 8px; min-height:38px; font-size:12px; white-space:nowrap; }
+.dock-tabs.chips { justify-content:flex-start; flex-direction:row-reverse; }
+.dock-tabs.chips button { flex:0 0 auto; background:#0f1d4a; }
+.dock-tabs.chips button.sel { background:#5a4a12; }
+.item.tap { cursor:pointer; }
+.item.tap:active { background:#2a3f8a; }
 .dock-row { display:flex; gap:8px; align-items:flex-end; }
 .dock-nav { display:flex; flex-direction:column; gap:4px; flex:none; }
 .dock-nav button { min-width:76px; }

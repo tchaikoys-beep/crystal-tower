@@ -52,6 +52,8 @@ await page.waitForTimeout(200);
 await page.locator('.item').first().click();
 await page.waitForTimeout(200);
 await shot('09-menu-equip');
+await page.getByRole('button', { name: 'やめる' }).click();
+await page.waitForTimeout(200);
 await page.getByRole('button', { name: 'アビリティ' }).click();
 await page.waitForTimeout(200);
 await shot('10-menu-ability');

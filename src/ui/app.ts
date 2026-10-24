@@ -28,6 +28,7 @@ import { BOARD, BLESSINGS, TRIALS } from '../data/board';
 import { SKILLS } from '../data/skills';
 import type { Battle } from '../core/battle';
 
+type TabOut = { content: Child[]; chips?: HTMLElement[]; actions?: HTMLElement[] };
 type Screen = 'title' | 'hub' | 'tower' | 'battle' | 'menu' | 'shop' | 'ranch' | 'rebirth' | 'records' | 'synth' | 'missions' | 'trials';
 const ROLE_JP: Record<string, string> = { attacker: 'アタッカー：攻撃+25%・追撃10%', blocker: 'ブロッカー：HP+25%・防御+15%・自動でかばう', healer: 'ヒーラー：回復+30%・オートリジェネ・MP+30%', jammer: 'ジャマー：状態異常付与率2倍・素早さ+10%', support: 'サポーター：先制+20%・味方のドロップ率とEXP+10%' };
 const STAT_JP: Record<string, string> = { hp: 'HP', mp: 'MP', str: 'ちから', vit: 'たいりょく', mag: 'まりょく', spr: 'せいしん', spd: 'すばやさ', luck: 'うん' };
@@ -68,7 +69,7 @@ export class App {
       case 'trials': this.root.append(this.trials()); break;
       case 'synth': this.root.append(synthScreen({ s: this.s!, itemLabel: it => this.itemLabel(it), render: () => this.render(), back: () => this.go('hub'), shell: o => this.shell(o) })); break;
     }
-    this.root.querySelector('.content')?.scrollTo(0, 0);
+    const sc = this.root.querySelector('.content'); if (sc) sc.scrollTop = this.screen === 'battle' ? 0 : sc.scrollHeight;
   }
   // ---------- タイトル
   title(): HTMLElement {
@@ -90,13 +91,15 @@ export class App {
     return h('div', {}, ta, btn('読み込む', () => { const s = importSave(ta.value); if (!s) { toast('読み込めなかった'); return; } this.s = s; save(s); this.go('hub'); }, 'small'));
   }
   // 画面の共通骨格：上＝スクロールする内容、下＝親指で届く操作ドック（右利き既定）
-  shell(o: { title: string; back?: () => void; tabs?: HTMLElement[]; nav?: HTMLElement[]; actions?: HTMLElement[]; content: Child[] }): HTMLElement {
+  shell(o: { title: string; back?: () => void; tabs?: HTMLElement[]; chips?: HTMLElement[]; nav?: HTMLElement[]; actions?: HTMLElement[]; content: Child[] }): HTMLElement {
     const s = this.s;
     const hdr = h('div', { class: 'hdr' }, h('b', { class: 'grow' }, o.title), s ? h('span', { class: 'dim' }, `${s.gil}G　転生${s.rebirths}　TP${s.tp}`) : null);
-    const content = h('div', { class: 'content' }, hdr, ...o.content);
+    // 内容は下詰め：短い画面でも操作対象がドックのすぐ上に来る
+    const content = h('div', { class: 'content' }, hdr, h('div', { class: 'spacer' }), ...o.content);
     const actions = [...(o.actions ?? [])];
     if (o.back) actions.push(btn('戻る', o.back, 'back'));
     const dock = h('div', { class: 'dock' },
+      o.chips?.length ? h('div', { class: 'dock-tabs chips' }, ...o.chips) : null,
       o.tabs?.length ? h('div', { class: 'dock-tabs' }, ...o.tabs) : null,
       h('div', { class: 'dock-row' }, h('div', { class: 'dock-nav' }, ...(o.nav ?? [])), h('div', { class: 'dock-actions' }, ...actions)));
     return h('div', { class: 'shell' }, content, dock);
@@ -116,9 +119,10 @@ export class App {
     const s = this.s!;
     const warps = s.run.warps.filter(w => w > 1).sort((a, b) => a - b);
     return this.shell({ title: 'クリスタルの間（1階）',
-      nav: [btn('メニュー', () => this.go('menu'), 'small'), btn('記録・設定', () => this.go('records'), 'small')],
+      nav: [btn('記録・設定', () => this.go('records'), 'small')],
       actions: [
         btn('塔へ登る（1階から）', () => { G.fullRestore(s); if (s.run.floor !== 1) G.warpTo(s, 1); this.go('tower'); }, 'primary'),
+        btn('メニュー', () => this.go('menu')),
         btn('ワープ' + (warps.length ? `（〜${warps[warps.length - 1]}階）` : ''), () => this.warpDialog(), '', !warps.length),
         G.undergroundUnlocked(s) ? btn(`裏タワー（地下${s.maxDepthEver}階）`, () => { G.fullRestore(s); G.enterUnderground(s, 1); this.go('tower'); }, 'bad') : null,
       ].filter(Boolean) as HTMLElement[],
@@ -171,8 +175,8 @@ export class App {
     const remaining = s.run.events.slice(s.run.eventIndex).map(e => e.type === 'battle' ? '⚔' : e.type === 'guardian' ? '☠' : e.type === 'treasure' ? '▣' : '♨').join(' ');
     const ug = s.run.underground;
     return this.shell({ title: ug ? `地下${s.run.floor}階 混沌（換算${G.effFloor(s)}階）` : `${s.run.floor}階 ${area.name}（${area.motif}）`,
-      nav: [btn('メニュー', () => this.go('menu'), 'small'), btn('テレポ', () => this.warpDialog(), 'small'), btn('拠点へ', () => { G.toHub(s); this.go('hub'); }, 'small')],
-      actions: acts,
+      nav: [btn('テレポ', () => this.warpDialog(), 'small'), btn('拠点へ', () => { G.toHub(s); this.go('hub'); }, 'small')],
+      actions: [...acts, btn('メニュー', () => this.go('menu'))],
       content: [
         h('div', { class: 'win' }, this.lawPanel(), h('div', { class: 'dim', style: 'font-size:12px' }, `この階の残り：${remaining || 'なし'}`)),
         h('div', { class: 'win' }, this.partyBars()),
@@ -208,14 +212,14 @@ export class App {
     const s = this.s!;
     const tabs = ['編成', 'ステータス', '装備', 'アビリティ', '作戦', '持ち物'];
     const back = () => { this.partyDraft = null; this.go(s.run.floor === 1 && s.run.eventIndex === 0 && !s.run.cleared ? 'hub' : 'tower'); };
-    const body = this.menuTab === '編成' ? this.partyTab() : this.menuTab === 'ステータス' ? this.statusTab() : this.menuTab === '装備' ? this.equipTab() : this.menuTab === 'アビリティ' ? this.abilityTab() : this.menuTab === '作戦' ? this.gambitTab() : this.bagTab();
-    return this.shell({ title: 'メニュー', back, tabs: this.tabBtns(tabs, this.menuTab, x => { this.menuTab = x; }), content: [body] });
+    const out = this.menuTab === '編成' ? this.partyTab() : this.menuTab === 'ステータス' ? this.statusTab() : this.menuTab === '装備' ? this.equipTab() : this.menuTab === 'アビリティ' ? this.abilityTab() : this.menuTab === '作戦' ? this.gambitTab() : this.bagTab();
+    return this.shell({ title: `メニュー：${this.menuTab}`, back, tabs: this.tabBtns(tabs, this.menuTab, x => { this.menuTab = x; (this as any)._slot = undefined; }), chips: out.chips, actions: out.actions, content: out.content });
   }
   memberName(key: string): string {
     if (key.startsWith('h:')) return HEROES[key.slice(2)].name;
     const m = this.s!.monsters.find(x => x.uid === key.slice(2)); return m ? gradeMark(m.grade) + MONSTERS[m.id].name : '?';
   }
-  partyTab(): HTMLElement {
+  partyTab(): TabOut {
     const s = this.s!;
     const d = this.partyDraft ??= { party: [...s.party], reserve: [...s.reserve] };
     const all = [...Object.keys(s.heroes).map(k => 'h:' + k), ...s.monsters.map(m => 'm:' + m.uid)];
@@ -228,15 +232,16 @@ export class App {
         btn('外す', () => { d.party = d.party.filter(k => k !== key); d.reserve = d.reserve.filter(k => k !== key); this.render(); }, 'small'));
     };
     const hn = d.party.filter(k => k.startsWith('h:')).length, mn = d.party.length - hn;
-    return h('div', {}, h('div', { class: 'win' }, h('div', { class: 'dim' }, `前線：英雄 ${hn}/${G.MAX_HERO_SLOTS}　モンスター ${mn}/${G.maxMonsterSlots(s)}　控え ${d.reserve.length}/${G.maxReserve(s)}（控えはEXP50%、待機は10%）`),
-      h('div', { class: 'list' }, ...all.map(row)),
-      btn('この編成にする', () => { const e = G.setParty(s, d.party, d.reserve); if (e) toast(e); else { toast('編成を変更した'); this.partyDraft = null; } this.render(); }, 'primary')));
+    const dirty = JSON.stringify([d.party, d.reserve]) !== JSON.stringify([s.party, s.reserve]);
+    return { content: [h('div', { class: 'win' }, h('div', { class: 'dim' }, `前線：英雄 ${hn}/${G.MAX_HERO_SLOTS}　モンスター ${mn}/${G.maxMonsterSlots(s)}　控え ${d.reserve.length}/${G.maxReserve(s)}（控えはEXP50%、待機は10%）`),
+      h('div', { class: 'list' }, ...all.map(row)))],
+      actions: [btn(dirty ? 'この編成にする' : '編成は反映済み', () => { const e = G.setParty(s, d.party, d.reserve); if (e) toast(e); else { toast('編成を変更した'); this.partyDraft = null; } this.render(); }, 'primary', !dirty)] };
   }
-  heroPicker(): HTMLElement {
+  heroPicker(): HTMLElement[] {
     const s = this.s!;
     const ids = Object.keys(s.heroes);
     if (!ids.includes(this.menuHero)) this.menuHero = ids[0];
-    return h('div', { class: 'row', style: 'margin:4px 6px' }, ...ids.map(id => btn(HEROES[id].name, () => { this.menuHero = id; this.render(); }, 'small' + (id === this.menuHero ? ' sel' : ''))));
+    return ids.map(id => btn(HEROES[id].name, () => { this.menuHero = id; (this as any)._slot = undefined; this.render(); }, 'small' + (id === this.menuHero ? ' sel' : '')));
   }
   itemLabel(it: ItemInstance, hs?: HeroState): HTMLElement {
     const base = ITEMS[it.base];
@@ -254,7 +259,7 @@ export class App {
       h('div', { class: 'dim', style: 'font-size:11px' }, desc, it.affixes.length ? '｜' + it.affixes.map(a => AFFIXES[a.id].desc(a.value)).join('、') : '', it.unique ? `｜【${UNIQUES[it.unique].name}】${UNIQUES[it.unique].desc}` : ''),
       learnText));
   }
-  equipTab(): HTMLElement {
+  equipTab(): TabOut {
     const s = this.s!;
     const picker = this.heroPicker();
     const hs = s.heroes[this.menuHero];
@@ -262,25 +267,31 @@ export class App {
     const slotSel = (this as any)._slot as Slot | undefined;
     const slots = SLOTS.map(sl => {
       const it = itemOf(s, hs.equip[sl]);
-      return h('div', { class: 'item' + (slotSel === sl ? ' sel' : ''), onclick: () => { (this as any)._slot = sl; this.render(); } }, h('span', { class: 'pill' }, SLOT_JP[sl]), it ? this.itemLabel(it, hs) : h('span', { class: 'dim grow' }, 'なし'), it ? btn('外す', (e?: Event) => { G.unequip(s, hs.id, sl); this.render(); }, 'small') : null);
+      return h('div', { class: 'item tap' + (slotSel === sl ? ' sel' : ''), onclick: () => { (this as any)._slot = sl; this.render(); } }, h('span', { class: 'pill' }, SLOT_JP[sl]), it ? this.itemLabel(it, hs) : h('span', { class: 'dim grow' }, 'なし'), h('span', { class: 'dim' }, '›'));
     });
-    const list: HTMLElement[] = [];
+    let sheet: HTMLElement | null = null;
     if (slotSel) {
       const kinds = slotSel === 'acc1' || slotSel === 'acc2' ? ['acc'] : [slotSel];
       const cands = s.inventory.filter(it => kinds.includes(ITEMS[it.base].kind)).sort((a, b) => (ITEMS[b.base].power ?? 0) + (ITEMS[b.base].def ?? 0) - (ITEMS[a.base].power ?? 0) - (ITEMS[a.base].def ?? 0));
-      for (const it of cands) {
+      const cur = itemOf(s, hs.equip[slotSel]);
+      const list = cands.map(it => {
         const ok = canEquip(hs, it);
         const owner = G.isEquipped(s, it.uid);
-        list.push(h('div', { class: 'item' }, this.itemLabel(it, hs), owner ? h('span', { class: 'pill' }, owner) : null, btn('装備', () => { const e = G.equip(s, hs.id, it.uid, slotSel); if (e) toast(e); this.render(); }, 'small', !ok.ok), !ok.ok ? h('span', { class: 'bad', style: 'font-size:11px' }, ok.reason) : null));
-      }
+        const isCur = cur?.uid === it.uid;
+        return h('div', { class: 'item' + (isCur ? ' sel' : '') }, this.itemLabel(it, hs), owner && !isCur ? h('span', { class: 'pill' }, owner) : null,
+          isCur ? btn('外す', () => { G.unequip(s, hs.id, slotSel); (this as any)._slot = undefined; this.render(); }, 'small') : btn('装備', () => { const e = G.equip(s, hs.id, it.uid, slotSel); if (e) toast(e); else (this as any)._slot = undefined; this.render(); }, 'small', !ok.ok),
+          !ok.ok ? h('span', { class: 'bad', style: 'font-size:11px' }, ok.reason) : null);
+      });
+      sheet = this.sheet(`${c.name}の${SLOT_JP[slotSel]}：候補 ${list.length}`, [h('div', { class: 'list' }, ...(list.length ? list : [h('div', { class: 'dim' }, '候補なし')]))], () => { (this as any)._slot = undefined; });
     }
-    return h('div', {}, picker,
+    return { chips: picker, content: [
       h('div', { class: 'win' }, h('div', { class: 'row' }, h('b', {}, c.name), h('span', { class: 'dim' }, `Lv${hs.level} ${JOBS[hs.job].name}`), h('span', { class: 'grow' }), h('span', { class: 'dim' }, `HP${c.stats.hp} MP${c.stats.mp} 攻${c.atk} 防${c.def} 魔防${c.mdef} 速${c.stats.spd}`)),
-        h('div', { class: 'dim', style: 'font-size:11px' }, `セット効果：${activeSets(s, hs).map(id => `${SETS[id].name}（${SETS[id].desc}）`).join('、') || 'なし'}`),
-        h('div', { class: 'list', style: 'max-height:none' }, ...slots)),
-      slotSel ? h('div', { class: 'win' }, h('h2', {}, `${SLOT_JP[slotSel]}の候補`), h('div', { class: 'list' }, ...(list.length ? list : [h('div', { class: 'dim' }, '候補なし')]))) : h('div', { class: 'win dim' }, '部位をタップすると候補が出る'));
+        h('div', { class: 'dim', style: 'font-size:11px' }, `セット効果：${activeSets(s, hs).map(id => `${SETS[id].name}（${SETS[id].desc}）`).join('、') || 'なし'}`)),
+      h('div', { class: 'win' }, h('div', { class: 'dim', style: 'font-size:11px;margin-bottom:4px' }, '部位をタップすると候補が下から出る'), h('div', { class: 'list' }, ...slots)),
+      sheet,
+    ] };
   }
-  abilityTab(): HTMLElement {
+  abilityTab(): TabOut {
     const s = this.s!;
     const picker = this.heroPicker();
     const hs = s.heroes[this.menuHero];
@@ -290,7 +301,7 @@ export class App {
     const jobs = G.unlockedJobs(s);
     const jl = hs.jobs[hs.job] ?? { lv: 1, abp: 0 };
     const apRows = Object.entries(hs.itemAp).map(([key, ap]) => { const it = SLOTS.map(sl => itemOf(s, hs.equip[sl])).find(i => i && (ITEMS[i.base].learn?.ability === key || ITEMS[i.base].learn?.skill === key)); const need = it ? ITEMS[it.base].learn!.ap : 0; return h('div', { class: 'dim', style: 'font-size:12px' }, `${SUPPORTS[key]?.name ?? (SKILLS[key] ? COMMANDS[SKILLS[key].category ?? '']?.name + '「' + SKILLS[key].name + '」' : key)}：AP ${ap}/${need || '?'}`); });
-    return h('div', {}, picker,
+    return { chips: picker, content: [
       h('div', { class: 'win' }, h('h2', {}, 'ジョブ'), h('div', { class: 'dim' }, `${JOBS[hs.job].name} Lv${jl.lv}${jl.lv >= MAX_JOB_LEVEL ? '（マスター）' : `　ABP ${jl.abp}/${abpToNext(jl.lv)}`}`),
         h('div', { class: 'row' }, ...jobs.map(j => btn(`${JOBS[j].name}${hs.jobs[j] ? ' Lv' + hs.jobs[j].lv : ''}`, () => { const e = G.changeJob(s, hs.id, j); if (e) toast(e); this.render(); }, 'small' + (j === hs.job ? ' sel' : '')))),
         h('div', { class: 'dim', style: 'font-size:12px' }, `技の解放：${JOBS[hs.job].unlocks.map(u => `Lv${u.lv} ${SKILLS[u.skill]?.name}`).join('、') || 'なし'}`),
@@ -310,10 +321,10 @@ export class App {
         }))),
       h('div', { class: 'win' }, h('h2', {}, `サポート枠（${hs.equipped.length}/${slots}）`),
         h('div', { class: 'list' }, ...learned.filter(a => !a.startsWith('cmd_')).map(ab => { const on = hs.equipped.includes(ab); return h('div', { class: 'item' + (on ? ' sel' : '') }, h('div', { class: 'grow' }, h('div', {}, SUPPORTS[ab]?.name ?? ab), h('div', { class: 'dim', style: 'font-size:11px' }, SUPPORTS[ab]?.desc ?? '')), btn(on ? '外す' : '装備', () => { if (on) hs.equipped = hs.equipped.filter(x => x !== ab); else { if (hs.equipped.length >= slots) { toast('サポート枠がいっぱい'); return; } hs.equipped.push(ab); } G.syncHp(s, hs); this.render(); }, 'small')); })),
-        apRows.length ? h('div', { style: 'margin-top:6px' }, h('b', {}, '装備から習得中'), ...apRows) : null));
+        apRows.length ? h('div', { style: 'margin-top:6px' }, h('b', {}, '装備から習得中'), ...apRows) : null)] };
   }
 
-  statusTab(): HTMLElement {
+  statusTab(): TabOut {
     const s = this.s!;
     const keys = [...Object.keys(s.heroes).map(k => 'h:' + k), ...s.monsters.map(m => 'm:' + m.uid)];
     if (!keys.includes((this as any)._skey)) (this as any)._skey = keys[0];
@@ -351,11 +362,10 @@ export class App {
         h('div', { style: 'font-size:12px' }, h('b', {}, '固有技：'), md.skills.map((k, i) => `${SKILLS[k].name}${i === 0 || m.bond >= 3 * (i + 1) ? '' : `（絆${3 * (i + 1)}で解放）`}`).join('、')),
         h('div', { class: 'dim', style: 'font-size:12px' }, `エサ加算：${Object.entries(m.food).map(([k, v]) => `${STAT_JP[k]}+${v}`).join(' ') || 'なし'}　進化：${md.evolveTo ? MONSTERS[md.evolveTo].name + '（Lv20＋素材×5＋魔晶石、牧場で）' : 'なし'}`));
     }
-    return h('div', {},
-      h('div', { class: 'row', style: 'margin:4px 6px' }, ...keys.map(k => btn(this.memberName(k), () => { (this as any)._skey = k; this.render(); }, 'small' + (k === key ? ' sel' : '')))),
+    return { chips: keys.map(k => btn(this.memberName(k), () => { (this as any)._skey = k; this.render(); }, 'small' + (k === key ? ' sel' : ''))), content: [
       h('div', { class: 'win' }, h('div', { class: 'row' }, c.kind === 'hero' ? faceEl(c.spriteId, 48) : monsterEl(c.spriteId, 48), h('h2', {}, c.name)), detail),
       h('div', { class: 'win' }, h('div', { class: 'grid2' }, ...statRows), derived, Object.keys(c.mods.resist).length ? h('div', { class: 'dim row', style: 'font-size:12px;gap:4px' }, '属性耐性：', ...Object.entries(c.mods.resist).map(([el, v]) => h('span', {}, elementIconEl(el) ?? el, `×${v}`)), h('span', {}, '（2=弱点 0.5=半減 0=無効 -1=吸収）')) : null),
-      h('div', { class: 'win' }, h('h2', {}, 'コマンド'), h('div', { class: 'dim', style: 'font-size:12px' }, c.commands.map(k => `${k.group === 'basic' ? '' : k.group + ':'}${k.name}`).join('、'))));
+      h('div', { class: 'win' }, h('h2', {}, 'コマンド'), h('div', { class: 'dim', style: 'font-size:12px' }, c.commands.map(k => `${k.group === 'basic' ? '' : k.group + ':'}${k.name}`).join('、')))] };
   }
   lawPanel(): HTMLElement {
     const s = this.s!;
@@ -373,7 +383,7 @@ export class App {
         risky.length ? btn('安全行を追加', () => { for (const m of risky) { const row = lawSafeRow(m.c, law); if (m.gam.length < G.gambitRows(s)) m.gam.push(row); else m.gam[m.gam.length - 1] = row; } toast('各メンバーの作戦に安全な行を追加した'); this.render(); }, 'small') : null,
         (s.bag.antilaw ?? 0) > 0 ? btn(`アンチロウカード（${s.bag.antilaw}）`, () => { s.run.antilaw.push(block); s.bag.antilaw!--; toast('この10階のロウを消した'); this.render(); }, 'small') : null));
   }
-  gambitTab(): HTMLElement {
+  gambitTab(): TabOut {
     const s = this.s!;
     const keys = [...s.party, ...s.reserve];
     if (!keys.includes((this as any)._gkey)) (this as any)._gkey = keys[0];
@@ -394,15 +404,16 @@ export class App {
     const autoOn = s.settings.autoGambit;
     const law = G.currentLaw(s);
     const preview = recommendGambits(c, law, s.bag);
-    return h('div', {},
-      h('div', { class: 'win' }, h('div', { class: 'row' }, btn(autoOn ? 'おまかせ作戦：ON' : 'おまかせ作戦：OFF', () => { s.settings.autoGambit = !autoOn; this.render(); }, autoOn ? 'sel' : ''), h('span', { class: 'dim grow', style: 'font-size:11px' }, autoOn ? '戦闘のたびに、各メンバーの持ち技・役割・その階層のロウから作戦を自動で組む。手動の作戦は保存されたまま使われない' : '手動の作戦を使う。ロウ違反の行は自動で飛ばされる'))),
-      h('div', { class: 'row', style: 'margin:4px 6px' }, ...keys.map(k => btn(this.memberName(k), () => { (this as any)._gkey = k; this.render(); }, 'small' + (k === key ? ' sel' : '')))),
+    return { chips: keys.map(k => btn(this.memberName(k), () => { (this as any)._gkey = k; this.render(); }, 'small' + (k === key ? ' sel' : ''))),
+      actions: [btn(autoOn ? 'おまかせ作戦：ON' : 'おまかせ作戦：OFF', () => { s.settings.autoGambit = !autoOn; this.render(); }, 'small' + (autoOn ? ' sel' : ''))],
+      content: [
+      h('div', { class: 'win' }, h('div', { class: 'row' }, h('span', { class: 'dim grow', style: 'font-size:11px' }, autoOn ? '戦闘のたびに、各メンバーの持ち技・役割・その階層のロウから作戦を自動で組む。手動の作戦は保存されたまま使われない' : '手動の作戦を使う。ロウ違反の行は自動で飛ばされる'))),
       autoOn ? h('div', { class: 'win' }, h('h2', {}, `${c.name}の今の作戦（自動）`), law ? h('div', { class: 'law', style: 'font-size:11px' }, `ロウ：${law.name} を反映`) : null, h('div', { class: 'list', style: 'max-height:none' }, ...preview.map((g, i) => h('div', { class: 'item', style: 'font-size:13px' }, h('span', { class: 'pill' }, String(i + 1)), describeGambit(g, c))))) : null,
       h('div', { class: 'win', style: autoOn ? 'opacity:.6' : '' }, h('div', { class: 'dim', style: 'font-size:12px' }, (autoOn ? '【手動の作戦（今は未使用）】' : '') + '上から順に条件を見て、最初に当てはまった行動をとる。オート戦闘でも手動でも、ゲージが溜まった時に作戦が当てはまれば自動で行動する。'),
         h('div', { class: 'list', style: 'max-height:none' }, ...gam.map(rowEl)),
-        btn('行を追加', () => { if (gam.length >= rows) { toast(`作戦は${rows}行まで`); return; } gam.push({ cond: 'always', action: 'attack', on: true }); this.render(); }, 'small')));
+        btn('行を追加', () => { if (gam.length >= rows) { toast(`作戦は${rows}行まで`); return; } gam.push({ cond: 'always', action: 'attack', on: true }); this.render(); }, 'small'))] };
   }
-  bagTab(): HTMLElement {
+  bagTab(): TabOut {
     const s = this.s!;
     const cons = Object.entries(s.bag).filter(([id, n]) => n > 0 && ITEMS[id].kind === 'consumable');
     const mats = Object.entries(s.bag).filter(([id, n]) => n > 0 && ITEMS[id].kind === 'material');
@@ -418,13 +429,13 @@ export class App {
       if (ef.kind === 'heal') apply(ef.power!, 0); else if (ef.kind === 'fullheal') apply(t.stats.hp, 0); else if (ef.kind === 'mp') apply(0, ef.power!); else if (ef.kind === 'revive') apply(Math.round(t.stats.hp * ef.power!), 0); else { toast('戦闘中に使う'); return; }
       s.bag[id]--; toast(`${t.name}に${ITEMS[id].name}を使った`); this.render();
     };
-    return h('div', {},
+    return { content: [
       h('div', { class: 'win' }, h('h2', {}, '消耗品'), h('div', { class: 'list' }, ...cons.map(([id, n]) => h('div', { class: 'item' }, iconEl(id), h('span', { class: 'grow' }, `${ITEMS[id].name} ×${n}`), btn('使う', () => useOut(id), 'small'))), !cons.length ? h('div', { class: 'dim' }, 'なし') : null)),
       h('div', { class: 'win' }, h('h2', {}, '魔法書'), h('div', { class: 'dim', style: 'font-size:11px' }, 'Lv4以上の魔法は、読んだ英雄だけが使える（ジョブLvの条件は別途必要）'),
         h('div', { class: 'list' }, ...tomes.map(([id, n]) => h('div', { class: 'item', style: 'flex-wrap:wrap' }, iconEl(id), h('span', { class: 'grow' }, `${ITEMS[id].name} ×${n}`),
           selectEl([{ value: '', label: '誰に読ませる' }, ...Object.keys(s.heroes).map(hid => ({ value: hid, label: `${HEROES[hid].name}${(s.heroes[hid].tomes ?? []).includes(tomeSpell(id)) ? '（読了）' : ''}` }))], '', v => { if (!v) return; const e = G.readTome(s, v, id); toast(e ?? `${HEROES[v].name}は${SKILLS[tomeSpell(id)].name}を覚えた`); this.render(); })))), !tomes.length ? h('div', { class: 'dim' }, 'なし（ボス・宝箱・稀に通常敵から）') : null),
       h('div', { class: 'win' }, h('h2', {}, '素材'), h('div', { class: 'dim' }, mats.map(([id, n]) => `${ITEMS[id].name}×${n}`).join('　') || 'なし')),
-      h('div', { class: 'win' }, h('h2', {}, `倉庫（${s.inventory.length}/${G.maxStorage(s)}）`), h('div', { class: 'dim', style: 'font-size:12px' }, '売却はショップで。装備はメニューの装備タブから。')));
+      h('div', { class: 'win' }, h('h2', {}, `倉庫（${s.inventory.length}/${G.maxStorage(s)}）`), h('div', { class: 'dim', style: 'font-size:12px' }, '売却はショップで。装備はメニューの装備タブから。'))] };
   }
   // ---------- ショップ
   shop(): HTMLElement {
