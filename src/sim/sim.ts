@@ -11,7 +11,9 @@ const REBIRTHS = Number(process.argv[2] ?? 3);
 const MAX_FLOOR = Number(process.argv[3] ?? 400);
 
 function autoEquip(s: GameState) {
-  for (const hs of Object.values(s.heroes)) {
+  // 前線の英雄だけに装備を回す（控え・待機の英雄が良品を抱え込まないように）
+  const partyHeroes = s.party.filter(k => k.startsWith('h:')).map(k => s.heroes[k.slice(2)]).filter(Boolean);
+  for (const hs of (partyHeroes.length ? partyHeroes : Object.values(s.heroes))) {
     for (const it of s.inventory) {
       const base = ITEMS[it.base];
       const slots = slotForKind(base.kind); if (!slots.length) continue;

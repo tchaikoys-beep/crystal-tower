@@ -172,3 +172,7 @@ export const HEROES: Record<string, HeroDef> = {
 // データ拡張 第1弾：英雄＋14（art/batch8_data.py で生成）
 import { HEROES2 } from './heroes2';
 for (const h of HEROES2) HEROES[h.id] = { id: h.id, name: h.name, title: h.title, mult: h.mult as HeroDef['mult'], innateJob: h.innateJob, limit: h.limit, join: { kind: 'floor', floor: h.joinFloor } };
+// データ拡張 第2弾：英雄＋23（art/batch9_data.py で生成）
+import { HEROES3 } from './heroes3';
+for (const h of HEROES3) HEROES[h.id] = { id: h.id, name: h.name, title: h.title, mult: h.mult as HeroDef['mult'], innateJob: h.innateJob, limit: h.limit, join: h.joinRebirth ? { kind: 'rebirth', count: h.joinRebirth } : { kind: 'floor', floor: h.joinFloor } };
+

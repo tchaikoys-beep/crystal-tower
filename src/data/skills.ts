@@ -249,5 +249,7 @@ export const BLUE_MP: Record<string, number> = {
 };
 export const BLUE_IDS = Object.keys(BLUE_MP).map(k => 'blue_' + k);
 for (const [src, mp] of Object.entries(BLUE_MP)) { const b = SKILLS[src]; if (!b) continue; SKILLS['blue_' + src] = { ...b, id: 'blue_' + src, kind: 'spell', category: 'blue', school: 'blue', mp, desc: b.desc + '（青魔法）' }; }
+import { HEROES3 } from './heroes3';
+for (const h of HEROES3) SKILLS[h.limit] = { id: h.limit, name: h.limitName, kind: 'limit', mp: 0, tag: 'limit', desc: 'リミット技', ...(h.limitDef as Partial<Skill>) } as Skill;
 export function skill(id: string): Skill { const s = SKILLS[id]; if (!s) throw new Error('unknown skill ' + id); return s; }
 export function skillsOfCategory(cat: string): Skill[] { return Object.values(SKILLS).filter(s => s.category === cat); }
