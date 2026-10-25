@@ -79,4 +79,6 @@ export const SETS: Record<string, SetDef> = {
   crystal: { id: 'crystal', name: 'クリスタル', pieces: 3, desc: '3点：全属性被ダメ半減' },
   genji: { id: 'genji', name: '源氏', pieces: 3, desc: '3点：追撃率+30%／4点：常時2回攻撃' },
   onion: { id: 'onion', name: 'たまねぎ', pieces: 3, desc: '3点：全ステ+10%／4点：全ステ+25%' },
+  thief: { id: 'thief', name: '盗賊', pieces: 3, desc: '3点：盗む+30%・先制+20%／4点：ドロップ率+20%' },
+  mage: { id: 'mage', name: '魔導師', pieces: 3, desc: '3点：魔力+15%／4点：MP消費半減' },
 };

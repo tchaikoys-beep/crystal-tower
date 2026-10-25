@@ -1668,5 +1668,643 @@ export const ITEMS2: BaseItem[] = [
 "skill": "forbidden_chapter",
 "ap": 330
 }
+},
+{
+"id": "thief_knife",
+"name": "盗賊のナイフ",
+"kind": "weapon",
+"price": 400,
+"area": 1,
+"wtype": "dagger",
+"power": 16,
+"stats": {
+"luck": 4
+},
+"learn": {
+"skill": "smoke_bomb",
+"ap": 105
+},
+"set": "thief"
+},
+{
+"id": "thief_vest",
+"name": "盗賊のベスト",
+"kind": "body",
+"price": 400,
+"area": 1,
+"def": 7,
+"mdef": 2,
+"stats": {
+"spd": 3
+},
+"learn": {
+"ability": "treasure",
+"ap": 105
+},
+"set": "thief"
+},
+{
+"id": "thief_bandana",
+"name": "盗賊のバンダナ",
+"kind": "head",
+"price": 400,
+"area": 1,
+"def": 5,
+"mdef": 2,
+"stats": {
+"luck": 3
+},
+"learn": {
+"ability": "steal_up",
+"ap": 105
+},
+"set": "thief"
+},
+{
+"id": "mage_hat",
+"name": "魔導師の帽子",
+"kind": "head",
+"price": 400,
+"area": 1,
+"def": 5,
+"mdef": 2,
+"stats": {
+"mag": 5
+},
+"learn": {
+"ability": "mp10",
+"ap": 105
+},
+"set": "mage"
+},
+{
+"id": "mage_robe",
+"name": "魔導師のローブ",
+"kind": "body",
+"price": 1200,
+"area": 2,
+"def": 11,
+"mdef": 3,
+"stats": {
+"mag": 6,
+"spr": 4
+},
+"learn": {
+"ability": "mag10",
+"ap": 130
+},
+"set": "mage"
+},
+{
+"id": "mage_rod",
+"name": "魔導師のロッド",
+"kind": "weapon",
+"price": 1200,
+"area": 2,
+"wtype": "rod",
+"power": 11,
+"stats": {
+"mag": 10
+},
+"learn": {
+"skill": "quake",
+"ap": 130
+},
+"set": "mage"
+},
+{
+"id": "mage_ring",
+"name": "魔導師の指輪",
+"kind": "acc",
+"price": 1200,
+"area": 2,
+"stats": {
+"mag": 5,
+"mp": 20
+},
+"learn": {
+"ability": "half_mp",
+"ap": 130
+},
+"set": "mage"
+},
+{
+"id": "thief_boots",
+"name": "盗賊の靴",
+"kind": "acc",
+"price": 1200,
+"area": 2,
+"stats": {
+"spd": 5
+},
+"learn": {
+"ability": "first_strike",
+"ap": 130
+},
+"set": "thief"
+},
+{
+"id": "dancer_dress",
+"name": "踊り子の衣装",
+"kind": "body",
+"price": 2600,
+"area": 3,
+"def": 16,
+"mdef": 5,
+"stats": {
+"spd": 6,
+"luck": 4
+},
+"learn": {
+"skill": "heal_dance",
+"ap": 155
+}
+},
+{
+"id": "geo_bell",
+"name": "風水士のベル",
+"kind": "acc",
+"price": 2600,
+"area": 3,
+"stats": {
+"mag": 6
+},
+"learn": {
+"skill": "stalactite",
+"ap": 155
+}
+},
+{
+"id": "kabuto",
+"name": "兜",
+"kind": "head",
+"price": 2600,
+"area": 3,
+"def": 16,
+"mdef": 8,
+"stats": {
+"str": 4
+},
+"learn": {
+"skill": "kotetsu_slash",
+"ap": 155
+}
+},
+{
+"id": "gunner_coat",
+"name": "ガンナーコート",
+"kind": "body",
+"price": 2600,
+"area": 3,
+"def": 18,
+"mdef": 5,
+"stats": {
+"luck": 5
+},
+"learn": {
+"skill": "fire_shot",
+"ap": 155
+}
+},
+{
+"id": "assassin_cloak",
+"name": "暗殺者の外套",
+"kind": "body",
+"price": 4200,
+"area": 4,
+"def": 23,
+"mdef": 7,
+"stats": {
+"spd": 8
+},
+"learn": {
+"skill": "rock_seal",
+"ap": 180
+}
+},
+{
+"id": "holy_mail",
+"name": "聖騎士の鎧",
+"kind": "body",
+"price": 4200,
+"area": 4,
+"def": 36,
+"mdef": 11,
+"stats": {
+"spr": 6
+},
+"learn": {
+"skill": "holy_blade",
+"ap": 180
+}
+},
+{
+"id": "scholar_glasses",
+"name": "学者のめがね",
+"kind": "head",
+"price": 4200,
+"area": 4,
+"def": 14,
+"mdef": 7,
+"stats": {
+"mag": 8,
+"spr": 6
+},
+"learn": {
+"skill": "chapter_wind",
+"ap": 180
+}
+},
+{
+"id": "bard_hat",
+"name": "吟遊詩人の帽子",
+"kind": "head",
+"price": 4200,
+"area": 4,
+"def": 16,
+"mdef": 8,
+"stats": {
+"spr": 6,
+"mp": 20
+},
+"learn": {
+"skill": "swift_song",
+"ap": 180
+}
+},
+{
+"id": "dark_helm",
+"name": "暗黒兜",
+"kind": "head",
+"price": 6500,
+"area": 5,
+"def": 26,
+"mdef": 13,
+"stats": {
+"str": 6
+},
+"learn": {
+"skill": "darkness",
+"ap": 205
+}
+},
+{
+"id": "juggler_gloves",
+"name": "道化の手袋",
+"kind": "acc",
+"price": 6500,
+"area": 5,
+"stats": {
+"luck": 8,
+"spd": 4
+},
+"learn": {
+"skill": "juggling",
+"ap": 205
+}
+},
+{
+"id": "rapier",
+"name": "レイピア",
+"kind": "weapon",
+"price": 6500,
+"area": 5,
+"wtype": "sword",
+"power": 65,
+"stats": {
+"spd": 8
+},
+"learn": {
+"skill": "flurry_thrust",
+"ap": 205
+}
+},
+{
+"id": "sniper_scope",
+"name": "狙撃鏡",
+"kind": "acc",
+"price": 6500,
+"area": 5,
+"stats": {
+"luck": 6
+},
+"learn": {
+"skill": "snipe",
+"ap": 205
+}
+},
+{
+"id": "bishop_mitre",
+"name": "司教冠",
+"kind": "head",
+"price": 9000,
+"area": 6,
+"def": 24,
+"mdef": 12,
+"stats": {
+"spr": 10
+},
+"learn": {
+"skill": "holy_wind",
+"ap": 230
+}
+},
+{
+"id": "mog_helm",
+"name": "モグヘルム",
+"kind": "head",
+"price": 9000,
+"area": 6,
+"def": 29,
+"mdef": 14,
+"stats": {
+"vit": 6,
+"luck": 4
+},
+"learn": {
+"skill": "mog_guard",
+"ap": 230
+}
+},
+{
+"id": "element_rod",
+"name": "精霊のロッド",
+"kind": "weapon",
+"price": 9000,
+"area": 6,
+"wtype": "rod",
+"power": 29,
+"stats": {
+"mag": 16
+},
+"learn": {
+"skill": "spirit_ward",
+"ap": 230
+}
+},
+{
+"id": "gadget_belt",
+"name": "からくりベルト",
+"kind": "acc",
+"price": 9000,
+"area": 6,
+"stats": {
+"luck": 8
+},
+"learn": {
+"skill": "heal_device",
+"ap": 230
+}
+},
+{
+"id": "nameless_katana",
+"name": "無銘の大刀",
+"kind": "weapon",
+"price": 12000,
+"area": 7,
+"wtype": "katana",
+"power": 105,
+"learn": {
+"skill": "crescent_slash",
+"ap": 255
+}
+},
+{
+"id": "abacus",
+"name": "算術のそろばん",
+"kind": "acc",
+"price": 12000,
+"area": 7,
+"stats": {
+"mag": 10
+},
+"learn": {
+"skill": "math_fire",
+"ap": 255
+}
+},
+{
+"id": "illusion_hat",
+"name": "幻術師の帽子",
+"kind": "head",
+"price": 12000,
+"area": 7,
+"def": 28,
+"mdef": 14,
+"stats": {
+"mag": 12
+},
+"learn": {
+"skill": "star_fall",
+"ap": 255
+}
+},
+{
+"id": "dark_armor",
+"name": "暗黒鎧",
+"kind": "body",
+"price": 12000,
+"area": 7,
+"def": 59,
+"mdef": 18,
+"stats": {
+"str": 6
+},
+"learn": {
+"skill": "soul_eater",
+"ap": 255
+}
+},
+{
+"id": "paladin_helm",
+"name": "聖騎士の兜",
+"kind": "head",
+"price": 15000,
+"area": 8,
+"def": 40,
+"mdef": 20,
+"stats": {
+"spr": 8
+},
+"learn": {
+"skill": "saint_cross",
+"ap": 280
+}
+},
+{
+"id": "yaksha_dagger",
+"name": "夜叉の短剣",
+"kind": "weapon",
+"price": 15000,
+"area": 8,
+"wtype": "dagger",
+"power": 89,
+"stats": {
+"spd": 8
+},
+"element": "dark",
+"learn": {
+"skill": "yaksha",
+"ap": 280
+}
+},
+{
+"id": "gunner_goggles",
+"name": "ガンナーゴーグル",
+"kind": "head",
+"price": 15000,
+"area": 8,
+"def": 30,
+"mdef": 15,
+"stats": {
+"luck": 8
+},
+"learn": {
+"skill": "double_shot",
+"ap": 280
+}
+},
+{
+"id": "bard_cape",
+"name": "吟遊詩人のマント",
+"kind": "acc",
+"price": 15000,
+"area": 8,
+"stats": {
+"spr": 10,
+"mp": 40
+},
+"learn": {
+"skill": "angel_song",
+"ap": 280
+}
+},
+{
+"id": "sniper_bow",
+"name": "狙撃弓",
+"kind": "weapon",
+"price": 19000,
+"area": 9,
+"wtype": "bow",
+"power": 120,
+"stats": {
+"luck": 10
+},
+"learn": {
+"skill": "twin_shot",
+"ap": 305
+}
+},
+{
+"id": "bishop_robe",
+"name": "司教のローブ",
+"kind": "body",
+"price": 19000,
+"area": 9,
+"def": 50,
+"mdef": 15,
+"stats": {
+"spr": 14,
+"mag": 8
+},
+"learn": {
+"skill": "judgment",
+"ap": 305
+}
+},
+{
+"id": "swordmaster_armor",
+"name": "剣聖の胴",
+"kind": "body",
+"price": 19000,
+"area": 9,
+"def": 67,
+"mdef": 20,
+"stats": {
+"str": 8,
+"spd": 4
+},
+"learn": {
+"skill": "musou",
+"ap": 305
+}
+},
+{
+"id": "dancer_shoes",
+"name": "踊り子の靴",
+"kind": "acc",
+"price": 19000,
+"area": 9,
+"stats": {
+"spd": 12
+},
+"learn": {
+"skill": "death_dance",
+"ap": 305
+}
+},
+{
+"id": "omega_armor",
+"name": "オメガの鎧",
+"kind": "body",
+"price": 24000,
+"area": 10,
+"def": 86,
+"mdef": 26,
+"stats": {
+"vit": 10
+},
+"learn": {
+"ability": "ribbon",
+"ap": 330
+}
+},
+{
+"id": "illusion_rod",
+"name": "幻術師のロッド",
+"kind": "weapon",
+"price": 24000,
+"area": 10,
+"wtype": "rod",
+"power": 51,
+"stats": {
+"mag": 28
+},
+"learn": {
+"skill": "prominence",
+"ap": 330
+}
+},
+{
+"id": "mog_sword",
+"name": "モグソード",
+"kind": "weapon",
+"price": 24000,
+"area": 10,
+"wtype": "sword",
+"power": 145,
+"stats": {
+"luck": 10
+},
+"element": "holy",
+"learn": {
+"skill": "ultima_charge",
+"ap": 330
+}
+},
+{
+"id": "elemental_ring",
+"name": "精霊の指輪",
+"kind": "acc",
+"price": 24000,
+"area": 10,
+"stats": {
+"mag": 14,
+"spr": 10
+},
+"learn": {
+"skill": "spirit_wrath",
+"ap": 330
+}
 }
 ] as BaseItem[];

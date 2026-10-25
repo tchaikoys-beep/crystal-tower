@@ -82,7 +82,30 @@ L += [
   W(9, 'outsider_gun', 'アウトサイダー', 'gun', 1.05, {'str': 8}, None, ab('crit10')), W(9, 'book_of_ages', '永劫の書', 'book', 1.0, {'mag': 26, 'spr': 16}, None, ab('doublecast')),
   W(10, 'omega_gun', 'オメガバスター', 'gun', 1.1, None, None, sk('ultima_shot')), W(10, 'akashic_record', 'アカシャの記録', 'book', 1.05, {'mag': 30, 'spr': 20}, None, sk('forbidden_chapter')),
 ]
-assert len(L) == 112, len(L)
+# ---- 装備＋40：セット2種（盗賊・魔導師）＋新ジョブ向けの固定装備
+L += [
+  W(1, 'thief_knife', '盗賊のナイフ', 'dagger', 1.0, {'luck': 4}, None, sk('smoke_bomb'), 'thief'), B(1, 'thief_vest', '盗賊のベスト', 0.65, {'spd': 3}, ab('treasure'), 'thief'),
+  H(1, 'thief_bandana', '盗賊のバンダナ', 0.45, {'luck': 3}, ab('steal_up'), 'thief'), H(1, 'mage_hat', '魔導師の帽子', 0.45, {'mag': 5}, ab('mp10'), 'mage'),
+  B(2, 'mage_robe', '魔導師のローブ', 0.6, {'mag': 6, 'spr': 4}, ab('mag10'), 'mage'), W(2, 'mage_rod', '魔導師のロッド', 'rod', 1.0, {'mag': 10}, None, sk('quake'), 'mage'),
+  A(2, 'mage_ring', '魔導師の指輪', {'mag': 5, 'mp': 20}, ab('half_mp'), 'mage'), A(2, 'thief_boots', '盗賊の靴', {'spd': 5}, ab('first_strike'), 'thief'),
+  B(3, 'dancer_dress', '踊り子の衣装', 0.6, {'spd': 6, 'luck': 4}, sk('heal_dance')), A(3, 'geo_bell', '風水士のベル', {'mag': 6}, sk('stalactite')),
+  H(3, 'kabuto', '兜', 0.6, {'str': 4}, sk('kotetsu_slash')), B(3, 'gunner_coat', 'ガンナーコート', 0.7, {'luck': 5}, sk('fire_shot')),
+  B(4, 'assassin_cloak', '暗殺者の外套', 0.65, {'spd': 8}, sk('rock_seal')), B(4, 'holy_mail', '聖騎士の鎧', 1.0, {'spr': 6}, sk('holy_blade')),
+  H(4, 'scholar_glasses', '学者のめがね', 0.4, {'mag': 8, 'spr': 6}, sk('chapter_wind')), H(4, 'bard_hat', '吟遊詩人の帽子', 0.45, {'spr': 6, 'mp': 20}, sk('swift_song')),
+  H(5, 'dark_helm', '暗黒兜', 0.6, {'str': 6}, sk('darkness')), A(5, 'juggler_gloves', '道化の手袋', {'luck': 8, 'spd': 4}, sk('juggling')),
+  W(5, 'rapier', 'レイピア', 'sword', 0.95, {'spd': 8}, None, sk('flurry_thrust')), A(5, 'sniper_scope', '狙撃鏡', {'luck': 6}, sk('snipe')),
+  H(6, 'bishop_mitre', '司教冠', 0.5, {'spr': 10}, sk('holy_wind')), H(6, 'mog_helm', 'モグヘルム', 0.6, {'vit': 6, 'luck': 4}, sk('mog_guard')),
+  W(6, 'element_rod', '精霊のロッド', 'rod', 1.0, {'mag': 16}, None, sk('spirit_ward')), A(6, 'gadget_belt', 'からくりベルト', {'luck': 8}, sk('heal_device')),
+  W(7, 'nameless_katana', '無銘の大刀', 'katana', 1.05, None, None, sk('crescent_slash')), A(7, 'abacus', '算術のそろばん', {'mag': 10}, sk('math_fire')),
+  H(7, 'illusion_hat', '幻術師の帽子', 0.5, {'mag': 12}, sk('star_fall')), B(7, 'dark_armor', '暗黒鎧', 1.05, {'str': 6}, sk('soul_eater')),
+  H(8, 'paladin_helm', '聖騎士の兜', 0.65, {'spr': 8}, sk('saint_cross')), W(8, 'yaksha_dagger', '夜叉の短剣', 'dagger', 1.05, {'spd': 8}, 'dark', sk('yaksha')),
+  H(8, 'gunner_goggles', 'ガンナーゴーグル', 0.5, {'luck': 8}, sk('double_shot')), A(8, 'bard_cape', '吟遊詩人のマント', {'spr': 10, 'mp': 40}, sk('angel_song')),
+  W(9, 'sniper_bow', '狙撃弓', 'bow', 1.05, {'luck': 10}, None, sk('twin_shot')), B(9, 'bishop_robe', '司教のローブ', 0.75, {'spr': 14, 'mag': 8}, sk('judgment')),
+  B(9, 'swordmaster_armor', '剣聖の胴', 1.0, {'str': 8, 'spd': 4}, sk('musou')), A(9, 'dancer_shoes', '踊り子の靴', {'spd': 12}, sk('death_dance')),
+  B(10, 'omega_armor', 'オメガの鎧', 1.15, {'vit': 10}, ab('ribbon')), W(10, 'illusion_rod', '幻術師のロッド', 'rod', 1.05, {'mag': 28}, None, sk('prominence')),
+  W(10, 'mog_sword', 'モグソード', 'sword', 1.05, {'luck': 10}, 'holy', sk('ultima_charge')), A(10, 'elemental_ring', '精霊の指輪', {'mag': 14, 'spr': 10}, sk('spirit_wrath')),
+]
+assert len(L) == 152, len(L)
 out = []
 for (a, i, n, kind, wt, m, st, el, learn, s) in L:
     it = {'id': i, 'name': n, 'kind': kind, 'price': PRICE[a], 'area': a}

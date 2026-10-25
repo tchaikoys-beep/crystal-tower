@@ -286,6 +286,10 @@ export function buildHero(s: GameState, hs: HeroState): Combatant {
   if ((setCount.crystal ?? 0) >= 3) mods.allResist = 0.5;
   if ((setCount.genji ?? 0) >= 3) mods.multi += 0.3;
   if ((setCount.genji ?? 0) >= 4) mods.genji = true;
+  if ((setCount.thief ?? 0) >= 3) { mods.steal += 0.3; mods.first += 0.2; }
+  if ((setCount.thief ?? 0) >= 4) mods.drop += 0.2;
+  if ((setCount.mage ?? 0) >= 3) stats.mag *= 1.15;
+  if ((setCount.mage ?? 0) >= 4) supports.add('half_mp');
   if ((setCount.onion ?? 0) >= 3) { const f = (setCount.onion ?? 0) >= 4 ? 1.25 : 1.1; for (const k of STAT_KEYS) stats[k] *= f; }
   if (weaponPower === 0 && supports.has('brawl')) weaponPower = stats.str * 0.8;
   const wm = masteryLevel((hs.mastery ?? {})[weaponType ?? 'fist'] ?? 0);
