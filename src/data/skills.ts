@@ -237,6 +237,9 @@ add(
 // 英雄＋14 のリミット技（src/data/heroes2.ts から）
 import { HEROES2 } from './heroes2';
 for (const h of HEROES2) SKILLS[h.limit] = { id: h.limit, name: h.limitName, kind: 'limit', mp: 0, tag: 'limit', desc: 'リミット技', ...(h.limitDef as Partial<Skill>) } as Skill;
+// ---- 技＋80（src/data/skills2.ts）
+import { SKILLS2 } from './skills2';
+add(...SKILLS2);
 // ---- 青魔法：敵の技を受けてラーニング（FF5式。覚えた青魔法はパーティ共有）
 export const BLUE_MP: Record<string, number> = {
   goblin_punch: 4, aqua_breath: 14, bad_breath: 22, needles: 16, white_wind: 20, blaster: 18, mind_blast: 14, flame: 12, grudge: 10, drain_touch: 10,

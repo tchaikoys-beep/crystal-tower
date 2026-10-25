@@ -157,6 +157,8 @@ export const JOBS: Record<string, JobDef> = {
   bluemage: { id: 'bluemage', name: '青魔道士', mult: { hp: 1.0, mp: 1.3, str: 0.85, vit: 0.95, mag: 1.2, spr: 1.1, spd: 1.0 }, command: 'blue',
     unlocks: [], learn: [{ lv: 2, ability: 'learning' }, { lv: 6, ability: 'mp10' }, { lv: 12, ability: 'mag10' }, { lv: 20, ability: 'half_mp' }], weapons: ['sword', 'rod', 'dagger'], unlockFloor: 150 },
 };
+import { EXTRA_UNLOCKS } from './skills2';
+for (const [j, list] of Object.entries(EXTRA_UNLOCKS)) { if (!JOBS[j]) continue; for (const u of list) if (!JOBS[j].unlocks.some(x => x.skill === u.skill)) JOBS[j].unlocks.push(u); JOBS[j].unlocks.sort((a, b) => a.lv - b.lv); }
 export function jobOfCommand(cat: string): JobDef | undefined { return Object.values(JOBS).find(j => j.command === cat); }
 
 export const HEROES: Record<string, HeroDef> = {
