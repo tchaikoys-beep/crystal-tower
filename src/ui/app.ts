@@ -310,7 +310,8 @@ export class App {
         h('div', { class: 'dim', style: 'font-size:12px' }, `技の解放：${JOBS[hs.job].unlocks.map(u => `Lv${u.lv} ${SKILLS[u.skill]?.name}`).join('、') || 'なし'}`),
         h('div', { class: 'dim', style: 'font-size:12px' }, `サポート習得：${JOBS[hs.job].learn.map(l => `Lv${l.lv} ${SUPPORTS[l.ability]?.name}`).join('、') || 'なし'}`)),
       h('div', { class: 'win' }, h('h2', {}, `青魔法 ${(s.blueLearned ?? []).length}/${BLUE_IDS.length}`), h('div', { class: 'dim', style: 'font-size:11px' }, `敵の技を青魔道士（または「ラーニング」持ち）が受けると覚える。覚えた青魔法はパーティ共有で、カテゴリ「青魔法」をセットした英雄が使える。${hs.job === 'bluemage' || heroSupports(s, hs).has('learning') ? 'この英雄はラーニング可' : ''}`),
-        h('div', { class: 'dim', style: 'font-size:12px' }, (s.blueLearned ?? []).map(k => SKILLS[k].name).join('、') || 'まだなし')),
+        h('div', { class: 'dim', style: 'font-size:12px' }, (s.blueLearned ?? []).map(k => SKILLS[k].name).join('、') || 'まだなし'),
+        h('div', { style: 'font-size:12px;margin-top:4px' }, h('b', {}, `超ボスの召喚獣 ${(s.summons ?? []).length}/9：`), h('span', { class: 'dim' }, (s.summons ?? []).map(k => SKILLS[k].name.replace('召喚：', '')).join('、') || '試練の間の超ボスを倒すと解放（1・3・5回目）。召喚士のコマンド「召喚」に加わる'))),
       h('div', { class: 'win' }, h('h2', {}, `コマンド（固有：${JOBS[hs.job].command ? COMMANDS[JOBS[hs.job].command!].name : 'なし'}　枠 ${hs.equippedCmds.length}/${cslots}）`),
         h('div', { class: 'dim', style: 'font-size:11px' }, 'カテゴリをセットすると、そのカテゴリで覚えている技が全部使える。技はそのジョブのLvと装備習得で増える'),
         h('div', { class: 'list', style: 'max-height:none' }, ...availableCategories(hs, heroExtraSkills(s, hs)).map(cat => {

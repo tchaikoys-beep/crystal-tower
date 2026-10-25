@@ -237,6 +237,19 @@ add(
 // 英雄＋14 のリミット技（src/data/heroes2.ts から）
 import { HEROES2 } from './heroes2';
 for (const h of HEROES2) SKILLS[h.limit] = { id: h.limit, name: h.limitName, kind: 'limit', mp: 0, tag: 'limit', desc: 'リミット技', ...(h.limitDef as Partial<Skill>) } as Skill;
+// ---- 召喚獣の残り9（超ボス撃破報酬で解放。召喚士のコマンド「召喚」に加わる）
+add(
+  A('smn_alexander', '召喚：アレクサンダー', 'summon', 40, { target: 'enemies', effect: 'magic', power: 160, element: 'holy', tag: 'magic' }, '聖なる審判'),
+  A('smn_fenrir', '召喚：フェンリル', 'summon', 30, { target: 'enemies', effect: 'magic', power: 110, element: 'wind', status: 'blind', chance: 0.5, tag: 'magic' }, '風の牙＋暗闇'),
+  A('smn_ark', '召喚：アーク', 'summon', 55, { target: 'enemies', effect: 'magic', power: 190, tag: 'magic' }, '古代兵器の砲撃'),
+  A('smn_diabolos', '召喚：ディアボロス', 'summon', 36, { target: 'enemies', effect: 'fixed', power: -0.5, element: 'dark', tag: 'magic' }, 'ダークメッセンジャー：全体HP50%（ボス12%）'),
+  A('smn_syldra', '召喚：シルドラ', 'summon', 36, { target: 'enemies', effect: 'magic', power: 130, element: 'thunder', tag: 'magic' }, 'サンダーストーム'),
+  A('smn_knights', '召喚：ナイツオブラウンド', 'summon', 90, { target: 'enemies', effect: 'magic', power: 260, tag: 'magic' }, 'アルティメットエンド'),
+  A('smn_catoblepas', '召喚：カトブレパス', 'summon', 24, { target: 'enemies', effect: 'status', status: 'paralyze', chance: 0.6, power: 0, tag: 'status' }, '魔眼：全体麻痺'),
+  A('smn_hades', '召喚：ハーデス', 'summon', 38, { target: 'enemies', effect: 'magic', power: 120, element: 'dark', status: 'poison', chance: 0.6, tag: 'magic' }, '黒い霧：闇＋毒'),
+  A('smn_crusader', '召喚：クルセイダー', 'summon', 70, { target: 'enemies', effect: 'magic', power: 230, element: 'holy', tag: 'magic' }, '聖なる突撃'),
+);
+export const SUPER_SUMMONS: Record<string, string[]> = { omega: ['smn_alexander', 'smn_fenrir', 'smn_ark'], ultima_weapon_true: ['smn_diabolos', 'smn_syldra', 'smn_knights'], shinryu: ['smn_catoblepas', 'smn_hades', 'smn_crusader'] };
 // ---- 技＋80（src/data/skills2.ts）
 import { SKILLS2 } from './skills2';
 add(...SKILLS2);

@@ -56,7 +56,7 @@ export function createHero(id: string, level = 1): HeroState {
 export function newGame(heroId: string, seed = Date.now() % 1000000): GameState {
   const s: GameState = {
     version: SAVE_VERSION, seed, rngState: seed, heroes: {}, party: [], reserve: [], monsters: [], inventory: [], bag: { potion: 5, phoenix_down: 1, magi_cage: 4 }, gil: 300,
-    run: newRun(1), maxFloorEver: 1, maxDepthEver: 0, superBosses: {}, autoModes: {}, blueLearned: [], rebirths: 0, tp: 0, board: { start: 1 }, blessing: null, trials: [],
+    run: newRun(1), maxFloorEver: 1, maxDepthEver: 0, superBosses: {}, autoModes: {}, blueLearned: [], summons: [], rebirths: 0, tp: 0, board: { start: 1 }, blessing: null, trials: [],
     missions: { offers: [], active: [], completed: 0 },
     codex: { items: [], affixes: [], monsters: [], captured: {} }, stats: { battles: 0, kills: 0, captures: 0, rebirthLog: [] }, uidCounter: 1, settings: { auto: true, speed: 2, autoGambit: true, hand: 'right' },
   };
@@ -495,7 +495,7 @@ function grantExp(s: GameState, exp: number, abp: number, ap: number, b: Battle)
   return lines;
 }
 import { SUPPORTS, jobOfCommand, COMMANDS } from '../data/jobs';
-import { SKILLS } from '../data/skills';
+import { SKILLS, SUPER_SUMMONS } from '../data/skills';
 const SUPPORT_NAME = (id: string) => SUPPORTS[id]?.name ?? id;
 export function learnName(l: { ability?: string; skill?: string }): string {
   if (l.ability) return SUPPORT_NAME(l.ability);
@@ -709,7 +709,7 @@ export function superBossEvent(id: string): FloorEvent {
   const def = SUPER_BOSSES.find(b => b.id === id)!;
   return { type: 'guardian', enemies: [id], boss: 'area', done: false, scale: def.scale, superBoss: id };
 }
-function superBossReward(s: GameState, id: string): string[] {
+export function superBossReward(s: GameState, id: string): string[] {
   const lines: string[] = [];
   s.superBosses[id] = (s.superBosses[id] ?? 0) + 1;
   const first = s.superBosses[id] === 1;
@@ -719,6 +719,11 @@ function superBossReward(s: GameState, id: string): string[] {
   const rng = rngOf(s); const area = areaFor(1000);
   const it = generateItem(rng, SUPER_BOSSES.find(b => b.id === id)!.scale, rng.pick(area.itemPool), 'ultima', nextUid(s)); saveRng(s, rng);
   if (s.inventory.length < maxStorage(s)) { s.inventory.push(it); addCodexItem(s, it); lines.push(`☆ ${itemName(it)} を手に入れた`); }
+  // 召喚獣：撃破1・3・5回目で1体ずつ
+  const n = s.superBosses[id]; const idx = n === 1 ? 0 : n === 3 ? 1 : n === 5 ? 2 : -1;
+  const smn = idx >= 0 ? SUPER_SUMMONS[id]?.[idx] : undefined;
+  if (smn && !(s.summons ??= []).includes(smn)) { s.summons.push(smn); lines.push(`★ 召喚獣「${SKILLS[smn].name.replace('召喚：', '')}」が仲間になった！召喚士の「召喚」で使える`); }
+  else if (idx < 0 && n < 5) lines.push(`次の召喚獣は撃破${n < 3 ? 3 : 5}回目`);
   if (id === 'omega' && first) lines.push('裏タワー（地下）が解放された！拠点から降りられる');
   if (id === 'shinryu' && first) lines.push('転生ボードの上限が+10された');
   return lines;

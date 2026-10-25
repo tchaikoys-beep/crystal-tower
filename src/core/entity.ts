@@ -191,7 +191,7 @@ export function equipLearns(s: GameState, hs: HeroState): { abilities: string[];
   return { abilities, skills };
 }
 /** 装備中アイテムの技＋覚えた青魔法（カテゴリ判定に使う追加技） */
-export function heroExtraSkills(s: GameState, hs: HeroState): string[] { return [...equipLearns(s, hs).skills, ...(s.blueLearned ?? [])]; }
+export function heroExtraSkills(s: GameState, hs: HeroState): string[] { return [...equipLearns(s, hs).skills, ...(s.blueLearned ?? []), ...(s.summons ?? [])]; }
 /** 魔石容量（FF9式）。Lvと転生ボードで増える */
 export function abilityStones(s: GameState, hs: HeroState): number { return 6 + Math.floor(hs.level / 4) + boardValue(s, 'ability_slots') * 4 + (s.rebirths >= 3 ? 2 : 0); }
 export function stonesUsed(hs: HeroState): number { return hs.equipped.reduce((a, k) => a + (SUPPORTS[k]?.cost ?? 0), 0); }

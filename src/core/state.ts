@@ -109,6 +109,7 @@ export interface GameState {
   superBosses: Record<string, number>; // 超ボス撃破回数
   autoModes: Record<string, AutoMode>; // おまかせ作戦のモード（メンバーごと）
   blueLearned: string[];              // 覚えた青魔法（blue_〜、パーティ共有）
+  summons: string[];                  // 超ボス報酬で解放した召喚獣（smn_〜、パーティ共有）
   rebirths: number;
   tp: number;
   board: Record<string, number>;

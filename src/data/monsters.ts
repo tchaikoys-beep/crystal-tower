@@ -134,9 +134,9 @@ add(
   M('ultima_weapon_true', 'アルテマウェポン（真）', 'machine', 'attacker', { hp: 12, str: 2.4, vit: 1.5, mag: 2.0, spd: 1.4 }, ['laser', 'meteor_strike', 'ultima_blast', 'gravija'], 0, '#aaf', { boss: true, resist: { poison: 0 }, material: 'orichalcum' }),
 );
 export const SUPER_BOSSES: { id: string; name: string; scale: number; cond: string; rewardText: string }[] = [
-  { id: 'omega', name: 'オメガ', scale: 1000, cond: '1000階到達', rewardText: 'アルテマ装備確定＋TP100＋裏タワー解放' },
-  { id: 'ultima_weapon_true', name: 'アルテマウェポン（真）', scale: 1300, cond: '転生10回', rewardText: 'アルテマ装備確定＋TP150' },
-  { id: 'shinryu', name: '神竜', scale: 1600, cond: '裏タワー地下100階到達', rewardText: 'アルテマ装備確定＋TP200＋転生ボードの全上限+10' },
+  { id: 'omega', name: 'オメガ', scale: 1000, cond: '1000階到達', rewardText: 'アルテマ装備確定＋TP100＋裏タワー解放。召喚獣：アレクサンダー（1回目）／フェンリル（3回目）／アーク（5回目）' },
+  { id: 'ultima_weapon_true', name: 'アルテマウェポン（真）', scale: 1300, cond: '転生10回', rewardText: 'アルテマ装備確定＋TP150。召喚獣：ディアボロス（1回目）／シルドラ（3回目）／ナイツオブラウンド（5回目）' },
+  { id: 'shinryu', name: '神竜', scale: 1600, cond: '裏タワー地下100階到達', rewardText: 'アルテマ装備確定＋TP200＋転生ボードの全上限+10。召喚獣：カトブレパス（1回目）／ハーデス（3回目）／クルセイダー（5回目）' },
 ];
 export function chaosPool(): string[] {
   const set = new Set<string>();
