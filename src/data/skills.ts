@@ -237,5 +237,14 @@ add(
 // 英雄＋14 のリミット技（src/data/heroes2.ts から）
 import { HEROES2 } from './heroes2';
 for (const h of HEROES2) SKILLS[h.limit] = { id: h.limit, name: h.limitName, kind: 'limit', mp: 0, tag: 'limit', desc: 'リミット技', ...(h.limitDef as Partial<Skill>) } as Skill;
+// ---- 青魔法：敵の技を受けてラーニング（FF5式。覚えた青魔法はパーティ共有）
+export const BLUE_MP: Record<string, number> = {
+  goblin_punch: 4, aqua_breath: 14, bad_breath: 22, needles: 16, white_wind: 20, blaster: 18, mind_blast: 14, flame: 12, grudge: 10, drain_touch: 10,
+  lamia_kiss: 8, shell_guard: 6, mighty_guard: 40, laser: 18, sleep_gas: 10, blind_dust: 8, silence_song: 10, stone_gaze: 14, dark_wave: 16, ice_breath: 16,
+  thunder_breath: 16, poison_breath: 16, meteor_strike: 26, megaflare: 48, curse: 14, self_heal: 12, holy_light: 24, dark_flare: 32, tidal_wave: 34, gravija: 30,
+  wing_attack: 12, quake_stomp: 12,
+};
+export const BLUE_IDS = Object.keys(BLUE_MP).map(k => 'blue_' + k);
+for (const [src, mp] of Object.entries(BLUE_MP)) { const b = SKILLS[src]; if (!b) continue; SKILLS['blue_' + src] = { ...b, id: 'blue_' + src, kind: 'spell', category: 'blue', school: 'blue', mp, desc: b.desc + '（青魔法）' }; }
 export function skill(id: string): Skill { const s = SKILLS[id]; if (!s) throw new Error('unknown skill ' + id); return s; }
 export function skillsOfCategory(cat: string): Skill[] { return Object.values(SKILLS).filter(s => s.category === cat); }

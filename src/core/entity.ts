@@ -63,6 +63,7 @@ export interface Combatant {
   fledAway: boolean;
   onceUsed?: Set<number>;
   elite: boolean;     // 強個体（＋）または守護者
+  learner: boolean;   // 青魔法をラーニングできる
 }
 export const isAlive = (c: Combatant) => c.hp > 0 && !c.captured && !c.fledAway;
 
@@ -189,6 +190,8 @@ export function equipLearns(s: GameState, hs: HeroState): { abilities: string[];
   for (const sl of SLOTS) { const l = learnOf(itemOf(s, hs.equip[sl])); if (!l) continue; if (l.ability) abilities.push(l.ability); if (l.skill) skills.push(l.skill); }
   return { abilities, skills };
 }
+/** 装備中アイテムの技＋覚えた青魔法（カテゴリ判定に使う追加技） */
+export function heroExtraSkills(s: GameState, hs: HeroState): string[] { return [...equipLearns(s, hs).skills, ...(s.blueLearned ?? [])]; }
 /** 魔石容量（FF9式）。Lvと転生ボードで増える */
 export function abilityStones(s: GameState, hs: HeroState): number { return 6 + Math.floor(hs.level / 4) + boardValue(s, 'ability_slots') * 4 + (s.rebirths >= 3 ? 2 : 0); }
 export function stonesUsed(hs: HeroState): number { return hs.equipped.reduce((a, k) => a + (SUPPORTS[k]?.cost ?? 0), 0); }
@@ -215,7 +218,7 @@ export function availableCategories(hs: HeroState, extra: string[] = []): string
   return Object.keys(COMMANDS).filter(cat => categorySkills(hs, cat, extra).length > 0);
 }
 export function heroCommands(s: GameState, hs: HeroState, _supports: Set<string>): Command[] {
-  const extra = equipLearns(s, hs).skills;
+  const extra = heroExtraSkills(s, hs);
   const cmds: Command[] = [{ id: 'attack', name: 'たたかう', skill: SKILLS.attack, group: 'basic' }];
   const job = JOBS[hs.job];
   const cats = [...(job.command ? [job.command] : []), ...(hs.equippedCmds ?? []).filter(c => c !== job.command)];
@@ -298,7 +301,7 @@ export function buildHero(s: GameState, hs: HeroState): Combatant {
     stats, hp: Math.min(hs.hp, stats.hp), mp: Math.min(hs.mp, stats.mp), atb: 0, statuses: {},
     atk, def: Math.round((def_ + stats.vit * 0.6) * (1 + out.defPct)), mdef: Math.round((mdef + stats.spr * 0.6) * (1 + out.mdefPct)),
     weaponElement, weaponType, mods, commands: heroCommands(s, hs, supports), gambits: hs.gambits, family: 'human', boss: false, midboss: false, captureRate: 0,
-    defending: 0, focus: 1, limit: hs.limit, limitSkill: def.limit, supports, role: null, elite: false, color: '#58f', kills: 0, phoenixUsed: false, captured: false, fledAway: false,
+    defending: 0, focus: 1, limit: hs.limit, limitSkill: def.limit, supports, role: null, elite: false, learner: hs.job === 'bluemage' || supports.has('learning'), color: '#58f', kills: 0, phoenixUsed: false, captured: false, fledAway: false,
   };
   if (hs.hp <= 0) c.hp = 0;
   return c;
@@ -351,7 +354,7 @@ export function buildAlly(s: GameState, m: MonsterAlly): Combatant {
     stats, hp: Math.min(m.hp, stats.hp), mp: Math.min(m.mp, stats.mp), atb: 0, statuses: {},
     atk: Math.round((stats.str * 1.7 + 8 * m.level * 0.3) * (1 + out.atkPct)), def: Math.round((def_ + stats.vit * 0.7) * (1 + out.defPct)), mdef: Math.round((mdef + stats.spr * 0.7) * (1 + out.mdefPct)),
     weaponElement: null, weaponType: null, mods, commands, gambits: m.gambits, family: def.family, boss: false, midboss: false, captureRate: 0,
-    defending: 0, focus: 1, limit: 0, limitSkill: null, supports, role: def.role, elite: false, color: def.color, kills: 0, phoenixUsed: false, captured: false, fledAway: false,
+    defending: 0, focus: 1, limit: 0, limitSkill: null, supports, role: def.role, elite: false, learner: false, color: def.color, kills: 0, phoenixUsed: false, captured: false, fledAway: false,
   };
 }
 
@@ -374,7 +377,7 @@ export function buildEnemy(id: string, floor: number, idx: number, opts: { guard
     stats, hp: stats.hp, mp: stats.mp, atb: 0, statuses: {},
     atk: Math.round(stats.str * 1.4), def: Math.round(stats.vit * 1.0), mdef: Math.round(stats.spr * 1.0),
     weaponElement: null, weaponType: null, mods, commands, gambits: [], family: boss ? 'boss' : def.family, boss, midboss: !!opts.midboss, captureRate: def.captureRate,
-    defending: 0, focus: 1, limit: 0, limitSkill: null, supports: new Set(), role: def.role, elite: !!(opts.elite || (opts.guardian && !boss)), color: def.color, kills: 0, phoenixUsed: false, captured: false, fledAway: false,
+    defending: 0, focus: 1, limit: 0, limitSkill: null, supports: new Set(), role: def.role, elite: !!(opts.elite || (opts.guardian && !boss)), learner: false, color: def.color, kills: 0, phoenixUsed: false, captured: false, fledAway: false,
   };
 }
 export function elementMultiplier(target: Combatant, el: Element | null | undefined): number {

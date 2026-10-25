@@ -56,7 +56,7 @@ export function createHero(id: string, level = 1): HeroState {
 export function newGame(heroId: string, seed = Date.now() % 1000000): GameState {
   const s: GameState = {
     version: SAVE_VERSION, seed, rngState: seed, heroes: {}, party: [], reserve: [], monsters: [], inventory: [], bag: { potion: 5, phoenix_down: 1, magi_cage: 4 }, gil: 300,
-    run: newRun(1), maxFloorEver: 1, maxDepthEver: 0, superBosses: {}, autoModes: {}, rebirths: 0, tp: 0, board: { start: 1 }, blessing: null, trials: [],
+    run: newRun(1), maxFloorEver: 1, maxDepthEver: 0, superBosses: {}, autoModes: {}, blueLearned: [], rebirths: 0, tp: 0, board: { start: 1 }, blessing: null, trials: [],
     missions: { offers: [], active: [], completed: 0 },
     codex: { items: [], affixes: [], monsters: [], captured: {} }, stats: { battles: 0, kills: 0, captures: 0, rebirthLog: [] }, uidCounter: 1, settings: { auto: true, speed: 2, autoGambit: true, hand: 'right' },
   };
@@ -338,7 +338,7 @@ export function startBattle(s: GameState, ev: FloorEvent): Battle {
   if (s.settings.autoGambit) { const law = ev.type === 'guardian' && ev.superBoss ? null : currentLaw(s); for (const p of players) p.gambits = recommendGambits(p, law, s.bag, { mode: autoModeOf(s, p) }); }
   const b = new Battle(players, enemies, rng, {
     floor: scale, law: ev.type === 'guardian' && ev.superBoss ? null : currentLaw(s), noItem: s.trials.includes('noitem'), auto: s.settings.auto, respectLaw: true, bag: s.bag, gil: s.gil,
-    canCaptureMidboss: boardValue(s, 'midboss_capture') > 0, canFlee: ev.type === 'battle', windBlessing: s.blessing === 'wind',
+    canCaptureMidboss: boardValue(s, 'midboss_capture') > 0, canFlee: ev.type === 'battle', windBlessing: s.blessing === 'wind', blueKnown: s.blueLearned ?? [],
   });
   saveRng(s, rng);
   return b;
@@ -348,6 +348,7 @@ export function finishBattle(s: GameState, b: Battle, ev: FloorEvent): BattleSum
   const out: BattleSummary = { lines: [], items: [] };
   saveRng(s, b.rng);
   s.gil -= b.gilSpent;
+  for (const id of b.blueLearnedNow) { if (!(s.blueLearned ??= []).includes(id)) { s.blueLearned.push(id); out.lines.push(`青魔法「${SKILLS[id].name}」をラーニングした！`); } }
   // HP/MP を書き戻す
   for (const c of b.players) {
     if (c.kind === 'hero') { const hs = s.heroes[c.ref]; hs.hp = c.hp; hs.mp = c.mp; hs.limit = c.limit; }

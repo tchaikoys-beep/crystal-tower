@@ -24,7 +24,7 @@ function migrate(s: GameState): GameState {
   s.settings.hand ??= 'right';
   s.reserve ??= [];
   s.missions ??= { offers: [], active: [], completed: 0 };
-  s.maxDepthEver ??= 0; s.superBosses ??= {}; s.autoModes ??= {};
+  s.maxDepthEver ??= 0; s.superBosses ??= {}; s.autoModes ??= {}; s.blueLearned ??= [];
   for (const m of s.monsters) { m.grade ??= (m.rare ? 'rare' : 'normal'); m.learned ??= []; m.moves ??= null; }
   s.codex.captured ??= {};
   s.run.underground ??= false; s.run.undergroundWarps ??= []; s.run.maxDepth ??= 0;

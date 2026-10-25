@@ -66,9 +66,10 @@ export const SUPPORTS: Record<string, SupportAbility> = {
   doublecast: { id: 'doublecast', name: '連続魔', desc: '魔法を1回の行動で2回唱える', cost: 9 },
   item_up: { id: 'item_up', name: '薬の知識', desc: 'アイテムと調合の回復量2倍', cost: 4 },
   terrain_mastery: { id: 'terrain_mastery', name: '地形の心得', desc: '地形技の威力+50%', cost: 4 },
+  learning: { id: 'learning', name: 'ラーニング', desc: '青魔道士でなくても、敵の技を受けると青魔法を覚える', cost: 3 },
 };
 /** 装備にランダムで付く習得アビリティの候補（ティアでコスト上限が上がる） */
-export const LEARNABLE_POOL = Object.keys(SUPPORTS).filter(k => !['brawl', 'doublecast', 'terrain_mastery'].includes(k));
+export const LEARNABLE_POOL = Object.keys(SUPPORTS).filter(k => !['brawl', 'doublecast', 'terrain_mastery', 'learning'].includes(k));
 
 export const COMMANDS: Record<string, CommandCategory> = {
   white: { id: 'white', name: '白魔法', desc: '回復と補助の魔法' },
@@ -90,6 +91,7 @@ export const COMMANDS: Record<string, CommandCategory> = {
   dance: { id: 'dance', name: '踊り', desc: '踊り子の踊り。敵全体の弱体と吸収' },
   red: { id: 'red', name: '赤魔法', desc: '白・黒・時の低位魔法' },
   summon: { id: 'summon', name: '召喚', desc: '召喚獣を呼ぶ。全体攻撃と全体強化' },
+  blue: { id: 'blue', name: '青魔法', desc: '敵の技を受けて覚える魔法。覚えた分はパーティ共有' },
 };
 
 export const JOBS: Record<string, JobDef> = {
@@ -152,6 +154,8 @@ export const JOBS: Record<string, JobDef> = {
   summoner: { id: 'summoner', name: '召喚士', mult: { hp: 0.8, mp: 1.5, str: 0.5, vit: 0.75, mag: 1.4, spr: 1.2, spd: 0.95 }, command: 'summon',
     unlocks: [{ lv: 1, skill: 'smn_chocobo' }, { lv: 3, skill: 'smn_shiva' }, { lv: 3, skill: 'smn_ifrit' }, { lv: 3, skill: 'smn_ramuh' }, { lv: 7, skill: 'smn_titan' }, { lv: 9, skill: 'smn_golem' }, { lv: 11, skill: 'smn_carbuncle' }, { lv: 13, skill: 'smn_odin' }, { lv: 16, skill: 'smn_phoenix' }, { lv: 18, skill: 'smn_leviathan' }, { lv: 20, skill: 'smn_bahamut' }],
     learn: [{ lv: 5, ability: 'mp20' }, { lv: 12, ability: 'mag10' }, { lv: 18, ability: 'half_mp' }], weapons: ['rod', 'staff'], unlockFloor: 200 },
+  bluemage: { id: 'bluemage', name: '青魔道士', mult: { hp: 1.0, mp: 1.3, str: 0.85, vit: 0.95, mag: 1.2, spr: 1.1, spd: 1.0 }, command: 'blue',
+    unlocks: [], learn: [{ lv: 2, ability: 'learning' }, { lv: 6, ability: 'mp10' }, { lv: 12, ability: 'mag10' }, { lv: 20, ability: 'half_mp' }], weapons: ['sword', 'rod', 'dagger'], unlockFloor: 150 },
 };
 export function jobOfCommand(cat: string): JobDef | undefined { return Object.values(JOBS).find(j => j.command === cat); }
 

@@ -19,6 +19,7 @@ export interface BattleOptions {
   auto: boolean;
   respectLaw: boolean;
   bag: Record<string, number>;
+  blueKnown?: string[];
   gil: number;
   canCaptureMidboss: boolean;
   canFlee: boolean;
@@ -43,6 +44,7 @@ export class Battle {
   stolen: string[] = [];
   captured: Combatant[] = [];
   gilSpent = 0;
+  blueLearnedNow: string[] = [];
   time = 0;
   waitingAuto = false;
   uses: { uid: string; kind: 'weapon' | 'shield' | 'spell'; key: string }[] = [];
@@ -188,6 +190,13 @@ export class Battle {
       } break;
       case 'limit': break;
     }
+    }
+    // ラーニング：敵の技を受けた青魔道士（またはラーニング持ち）が生き残っていれば覚える
+    if (c.side === 'enemy' && SKILLS['blue_' + skill.id]) {
+      const bid = 'blue_' + skill.id;
+      if (!(this.opt.blueKnown ?? []).includes(bid) && !this.blueLearnedNow.includes(bid) && targets.some(t => t.side === 'player' && t.kind === 'hero' && t.learner && isAlive(t) && !t.statuses.sleep)) {
+        this.blueLearnedNow.push(bid); this.say(`「${SKILLS[bid].name}」をラーニングした！`, 'good');
+      }
     }
     this.after();
   }
