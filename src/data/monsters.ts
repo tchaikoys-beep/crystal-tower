@@ -147,6 +147,10 @@ export function allMidBosses(): string[] { return [...new Set(AREAS.flatMap(a =>
 export function allAreaBosses(): string[] { return AREAS.map(a => a.boss); }
 export function monster(id: string): MonsterDef { const m = MONSTERS[id]; if (!m) throw new Error('unknown monster ' + id); return m; }
 
+// ---- バッチ7：後半エリアの新規モンスター（art/batch7_data.py で生成）
+import { BATCH7 } from './batch7';
+for (const n of BATCH7) MONSTERS[n.id] = { id: n.id, name: n.name, family: n.family, role: n.role as MonsterDef['role'], mult: n.mult as MonsterDef['mult'], skills: n.skills, captureRate: n.captureRate, color: n.color, material: n.material, ...(n.resist ? { resist: n.resist as MonsterDef['resist'] } : {}) };
+
 // ---- 色違い・上位種（art/variants.py で生成。基礎種より一回り強く、技が1つ多い）
 import { VARIANTS } from './variants';
 for (const v of VARIANTS) {
@@ -251,7 +255,11 @@ function expandBands(area: AreaDef): void {
   const f0 = area.floors[0], len = Math.round((area.floors[1] - area.floors[0] + 1) / 4);
   area.subs = starts.map((st, k) => ({ floors: [f0 + k * len, k === 3 ? area.floors[1] : f0 + (k + 1) * len - 1] as [number, number], pool: seq.slice(st, st + win) }));
 }
-for (const a of AREAS) expandBands(a);
+for (const a of AREAS) {
+  const mine = BATCH7.filter(n => n.area === a.id);
+  mine.forEach((n, i) => { const sub = a.subs[Math.min(a.subs.length - 1, Math.floor(i * a.subs.length / Math.max(1, mine.length)))]; if (!sub.pool.includes(n.id)) sub.pool.push(n.id); });
+  expandBands(a);
+}
 
 export function areaFor(floor: number): AreaDef {
   return AREAS.find(a => floor >= a.floors[0] && floor <= a.floors[1]) ?? AREAS[AREAS.length - 1];
