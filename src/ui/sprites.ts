@@ -24,7 +24,7 @@ export function iconName(itemId: string): string | null {
   if (b.kind === 'tome') return has.has('icon_tome') ? 'icon_tome' : null;
   if (b.kind === 'material') return has.has('icon_material') ? 'icon_material' : null;
   if (b.kind === 'consumable') return has.has('icon_consumable') ? 'icon_consumable' : null;
-  if (b.kind === 'weapon' && b.wtype) { const m: Record<string, string> = { sword: 'icon_sword', katana: 'icon_katana', dagger: 'icon_dagger', spear: 'icon_spear', staff: 'icon_staff', rod: 'icon_rod', axe: 'icon_axe', bow: 'icon_bow', fist: 'icon_fist', whip: 'icon_whip' }; const n = m[b.wtype]; return n && has.has(n) ? n : null; }
+  if (b.kind === 'weapon' && b.wtype) { const m: Record<string, string> = { sword: 'icon_sword', katana: 'icon_katana', dagger: 'icon_dagger', spear: 'icon_spear', staff: 'icon_staff', rod: 'icon_rod', axe: 'icon_axe', bow: 'icon_bow', fist: 'icon_fist', whip: 'icon_whip', gun: 'icon_gun', book: 'icon_book' }; const n = m[b.wtype]; return n && has.has(n) ? n : null; }
   const id = b.id;
   const kw = (ws: string[]) => ws.some(w => id.includes(w));
   let n: string | undefined;

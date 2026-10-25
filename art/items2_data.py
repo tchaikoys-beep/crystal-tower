@@ -3,7 +3,7 @@ import json, os
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 WP = {1: 20, 2: 32, 3: 42, 4: 55, 5: 68, 6: 82, 7: 95, 8: 106, 9: 120, 10: 138}      # 武器基礎攻撃
 BD = {1: 11, 2: 18, 3: 26, 4: 36, 5: 44, 6: 48, 7: 56, 8: 61, 9: 67, 10: 75}         # 体防御基礎
-TM = {'sword': 1.0, 'katana': 1.05, 'axe': 1.18, 'spear': 1.0, 'bow': 0.95, 'fist': 0.95, 'whip': 0.85, 'dagger': 0.8, 'staff': 0.4, 'rod': 0.35}
+TM = {'gun': 1.0, 'book': 0.45, 'sword': 1.0, 'katana': 1.05, 'axe': 1.18, 'spear': 1.0, 'bow': 0.95, 'fist': 0.95, 'whip': 0.85, 'dagger': 0.8, 'staff': 0.4, 'rod': 0.35}
 PRICE = {1: 400, 2: 1200, 3: 2600, 4: 4200, 5: 6500, 6: 9000, 7: 12000, 8: 15000, 9: 19000, 10: 24000}
 # (area, id, 名前, kind, wtype|None, 倍率(武器)/防御倍率(防具), stats, element, learn(ability or skill), set)
 W = lambda a, i, n, wt, m=1.0, st=None, el=None, learn=None, s=None: (a, i, n, 'weapon', wt, m, st, el, learn, s)
@@ -74,7 +74,15 @@ L = [
   S(10, 'crystal_shield10', 'ザナルカンドの盾', 0.8, None, ab('ribbon')), H(10, 'crown10', '王冠', 0.6, {'mag': 12, 'spr': 12}, ab('mp20')),
   B(10, 'zanarkand_robe', '召喚士のローブ', 0.9, {'mag': 16, 'spr': 16}, ab('half_mp')), A(10, 'moogle_badge', 'モーグリバッジ', {'luck': 14}, ab('drop_up')),
 ]
-assert len(L) == 100, len(L)
+L += [
+  W(1, 'pistol', 'ピストル', 'gun', 0.9, None, None, sk('vital_shot')), W(1, 'spell_book', '魔法の書', 'book', 1.0, {'mag': 6, 'spr': 4}, None, sk('chapter_water')),
+  W(3, 'rifle', 'ライフル', 'gun', 1.0, None, None, ab('first_strike')), W(3, 'grimoire', 'グリモワール', 'book', 1.0, {'mag': 12, 'spr': 6}, None, sk('math_cure')),
+  W(5, 'blaster_gun', 'ブラスター', 'gun', 1.0, None, 'thunder', sk('thunder_shot')), W(5, 'tome_of_wisdom', '叡智の書', 'book', 1.0, {'mag': 16, 'spr': 12}, None, ab('mp20')),
+  W(7, 'death_penalty', 'デスペナルティ', 'gun', 1.05, {'luck': 8}, None, sk('death_arrow')), W(7, 'necronomicon', 'ネクロノミコン', 'book', 1.0, {'mag': 22}, 'dark', sk('chapter_dark')),
+  W(9, 'outsider_gun', 'アウトサイダー', 'gun', 1.05, {'str': 8}, None, ab('crit10')), W(9, 'book_of_ages', '永劫の書', 'book', 1.0, {'mag': 26, 'spr': 16}, None, ab('doublecast')),
+  W(10, 'omega_gun', 'オメガバスター', 'gun', 1.1, None, None, sk('ultima_shot')), W(10, 'akashic_record', 'アカシャの記録', 'book', 1.05, {'mag': 30, 'spr': 20}, None, sk('forbidden_chapter')),
+]
+assert len(L) == 112, len(L)
 out = []
 for (a, i, n, kind, wt, m, st, el, learn, s) in L:
     it = {'id': i, 'name': n, 'kind': kind, 'price': PRICE[a], 'area': a}

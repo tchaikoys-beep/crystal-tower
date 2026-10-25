@@ -95,7 +95,7 @@ export const COMMANDS: Record<string, CommandCategory> = {
 };
 
 export const JOBS: Record<string, JobDef> = {
-  freelancer: { id: 'freelancer', name: 'すっぴん', mult: {}, unlocks: [], learn: [], weapons: ['sword', 'dagger', 'spear', 'katana', 'axe', 'bow', 'staff', 'rod', 'fist', 'whip'] },
+  freelancer: { id: 'freelancer', name: 'すっぴん', mult: {}, unlocks: [], learn: [], weapons: ['sword', 'dagger', 'spear', 'katana', 'axe', 'bow', 'staff', 'rod', 'fist', 'whip', 'gun', 'book'] },
   knight: { id: 'knight', name: 'ナイト', mult: { hp: 1.25, str: 1.2, vit: 1.25, mag: 0.6, spd: 0.9 }, command: 'knight',
     unlocks: [{ lv: 1, skill: 'guard' }, { lv: 3, skill: 'shield_bash' }, { lv: 6, skill: 'two_slash' }, { lv: 10, skill: 'brave_slash' }, { lv: 15, skill: 'holy_burst' }],
     learn: [{ lv: 2, ability: 'cover' }, { lv: 5, ability: 'hp10' }, { lv: 10, ability: 'two_handed' }, { lv: 18, ability: 'hp30' }], weapons: ['sword', 'spear', 'axe'] },
@@ -157,6 +157,8 @@ export const JOBS: Record<string, JobDef> = {
   bluemage: { id: 'bluemage', name: '青魔道士', mult: { hp: 1.0, mp: 1.3, str: 0.85, vit: 0.95, mag: 1.2, spr: 1.1, spd: 1.0 }, command: 'blue',
     unlocks: [], learn: [{ lv: 2, ability: 'learning' }, { lv: 6, ability: 'mp10' }, { lv: 12, ability: 'mag10' }, { lv: 20, ability: 'half_mp' }], weapons: ['sword', 'rod', 'dagger'], unlockFloor: 150 },
 };
+import { JOBS3, COMMANDS3 } from './jobs3';
+Object.assign(COMMANDS, COMMANDS3); Object.assign(JOBS, JOBS3);
 import { EXTRA_UNLOCKS } from './skills2';
 for (const [j, list] of Object.entries(EXTRA_UNLOCKS)) { if (!JOBS[j]) continue; for (const u of list) if (!JOBS[j].unlocks.some(x => x.skill === u.skill)) JOBS[j].unlocks.push(u); JOBS[j].unlocks.sort((a, b) => a.lv - b.lv); }
 export function jobOfCommand(cat: string): JobDef | undefined { return Object.values(JOBS).find(j => j.command === cat); }

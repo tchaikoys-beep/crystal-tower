@@ -1481,5 +1481,192 @@ export const ITEMS2: BaseItem[] = [
 "ability": "drop_up",
 "ap": 330
 }
+},
+{
+"id": "pistol",
+"name": "ピストル",
+"kind": "weapon",
+"price": 400,
+"area": 1,
+"wtype": "gun",
+"power": 18,
+"learn": {
+"skill": "vital_shot",
+"ap": 105
+}
+},
+{
+"id": "spell_book",
+"name": "魔法の書",
+"kind": "weapon",
+"price": 400,
+"area": 1,
+"wtype": "book",
+"power": 9,
+"stats": {
+"mag": 6,
+"spr": 4
+},
+"learn": {
+"skill": "chapter_water",
+"ap": 105
+}
+},
+{
+"id": "rifle",
+"name": "ライフル",
+"kind": "weapon",
+"price": 2600,
+"area": 3,
+"wtype": "gun",
+"power": 42,
+"learn": {
+"ability": "first_strike",
+"ap": 155
+}
+},
+{
+"id": "grimoire",
+"name": "グリモワール",
+"kind": "weapon",
+"price": 2600,
+"area": 3,
+"wtype": "book",
+"power": 19,
+"stats": {
+"mag": 12,
+"spr": 6
+},
+"learn": {
+"skill": "math_cure",
+"ap": 155
+}
+},
+{
+"id": "blaster_gun",
+"name": "ブラスター",
+"kind": "weapon",
+"price": 6500,
+"area": 5,
+"wtype": "gun",
+"power": 68,
+"element": "thunder",
+"learn": {
+"skill": "thunder_shot",
+"ap": 205
+}
+},
+{
+"id": "tome_of_wisdom",
+"name": "叡智の書",
+"kind": "weapon",
+"price": 6500,
+"area": 5,
+"wtype": "book",
+"power": 31,
+"stats": {
+"mag": 16,
+"spr": 12
+},
+"learn": {
+"ability": "mp20",
+"ap": 205
+}
+},
+{
+"id": "death_penalty",
+"name": "デスペナルティ",
+"kind": "weapon",
+"price": 12000,
+"area": 7,
+"wtype": "gun",
+"power": 100,
+"stats": {
+"luck": 8
+},
+"learn": {
+"skill": "death_arrow",
+"ap": 255
+}
+},
+{
+"id": "necronomicon",
+"name": "ネクロノミコン",
+"kind": "weapon",
+"price": 12000,
+"area": 7,
+"wtype": "book",
+"power": 43,
+"stats": {
+"mag": 22
+},
+"element": "dark",
+"learn": {
+"skill": "chapter_dark",
+"ap": 255
+}
+},
+{
+"id": "outsider_gun",
+"name": "アウトサイダー",
+"kind": "weapon",
+"price": 19000,
+"area": 9,
+"wtype": "gun",
+"power": 126,
+"stats": {
+"str": 8
+},
+"learn": {
+"ability": "crit10",
+"ap": 305
+}
+},
+{
+"id": "book_of_ages",
+"name": "永劫の書",
+"kind": "weapon",
+"price": 19000,
+"area": 9,
+"wtype": "book",
+"power": 54,
+"stats": {
+"mag": 26,
+"spr": 16
+},
+"learn": {
+"ability": "doublecast",
+"ap": 305
+}
+},
+{
+"id": "omega_gun",
+"name": "オメガバスター",
+"kind": "weapon",
+"price": 24000,
+"area": 10,
+"wtype": "gun",
+"power": 152,
+"learn": {
+"skill": "ultima_shot",
+"ap": 330
+}
+},
+{
+"id": "akashic_record",
+"name": "アカシャの記録",
+"kind": "weapon",
+"price": 24000,
+"area": 10,
+"wtype": "book",
+"power": 65,
+"stats": {
+"mag": 30,
+"spr": 20
+},
+"learn": {
+"skill": "forbidden_chapter",
+"ap": 330
+}
 }
 ] as BaseItem[];

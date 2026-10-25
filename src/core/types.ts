@@ -20,9 +20,9 @@ export type Slot = 'weapon' | 'shield' | 'head' | 'body' | 'acc1' | 'acc2';
 export const SLOTS: Slot[] = ['weapon', 'shield', 'head', 'body', 'acc1', 'acc2'];
 export const SLOT_JP: Record<Slot, string> = { weapon: '武器', shield: '盾', head: '頭', body: '体', acc1: 'アクセ1', acc2: 'アクセ2' };
 export type ItemKind = 'weapon' | 'shield' | 'head' | 'body' | 'acc' | 'consumable' | 'material' | 'tome';
-export type WeaponType = 'sword' | 'dagger' | 'spear' | 'katana' | 'axe' | 'bow' | 'staff' | 'rod' | 'fist' | 'whip';
+export type WeaponType = 'sword' | 'dagger' | 'spear' | 'katana' | 'axe' | 'bow' | 'staff' | 'rod' | 'fist' | 'whip' | 'gun' | 'book';
 export const WEAPON_JP: Record<WeaponType, string> = {
-  sword: '剣', dagger: '短剣', spear: '槍', katana: '刀', axe: '斧', bow: '弓', staff: '杖', rod: 'ロッド', fist: '格闘', whip: '鞭',
+  sword: '剣', dagger: '短剣', spear: '槍', katana: '刀', axe: '斧', bow: '弓', staff: '杖', rod: 'ロッド', fist: '格闘', whip: '鞭', gun: '銃', book: '本',
 };
 
 export type Rarity = 'normal' | 'mithril' | 'crystal' | 'legend' | 'ultima';
