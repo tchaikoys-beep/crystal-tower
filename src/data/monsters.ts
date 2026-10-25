@@ -147,6 +147,17 @@ export function allMidBosses(): string[] { return [...new Set(AREAS.flatMap(a =>
 export function allAreaBosses(): string[] { return AREAS.map(a => a.boss); }
 export function monster(id: string): MonsterDef { const m = MONSTERS[id]; if (!m) throw new Error('unknown monster ' + id); return m; }
 
+// ---- 色違い・上位種（art/variants.py で生成。基礎種より一回り強く、技が1つ多い）
+import { VARIANTS } from './variants';
+for (const v of VARIANTS) {
+  const b = MONSTERS[v.base]; if (!b) continue;
+  const mult: MonsterDef['mult'] = { ...b.mult };
+  for (const k of Object.keys(mult) as (keyof typeof mult)[]) mult[k] = Math.round((mult[k] ?? 1) * 1.15 * 100) / 100;
+  for (const [k, f] of Object.entries(v.mult)) (mult as any)[k] = Math.round(((mult as any)[k] ?? 1) * f * 100) / 100;
+  MONSTERS[v.id] = { ...b, id: v.id, name: v.name, mult, skills: [...b.skills, v.skill].filter((x, i, a) => a.indexOf(x) === i), resist: v.resist ? { ...(b.resist ?? {}), ...(v.resist as any) } : b.resist, captureRate: Math.round(b.captureRate * 0.8 * 100) / 100, evolveTo: undefined, color: b.color };
+}
+export const VARIANT_OF: Record<string, string> = Object.fromEntries(VARIANTS.map(v => [v.id, v.base]));
+
 export const AREAS: AreaDef[] = [
   {
     id: 1, name: 'コーネリア', motif: 'FF1', floors: [1, 100],
@@ -230,6 +241,18 @@ export const AREAS: AreaDef[] = [
     key: 'orichalcum',
   },
 ];
+// ---- 25階ごとの敵テーブル：エリアの出現順に色違いを差し込み、4つの帯に分けて少しずつ入れ替える
+function expandBands(area: AreaDef): void {
+  const seq: string[] = [];
+  for (const sub of area.subs) for (const m of sub.pool) if (!seq.includes(m)) seq.push(m);
+  for (const v of VARIANTS) { const bi = seq.indexOf(v.base); if (bi < 0 || seq.includes(v.id)) continue; seq.splice(Math.min(seq.length, bi + 3), 0, v.id); }
+  const n = seq.length, win = Math.max(5, Math.ceil(n * 0.4));
+  const starts = [0, Math.round(n * 0.2), Math.round(n * 0.4), Math.max(0, n - win)];
+  const f0 = area.floors[0], len = Math.round((area.floors[1] - area.floors[0] + 1) / 4);
+  area.subs = starts.map((st, k) => ({ floors: [f0 + k * len, k === 3 ? area.floors[1] : f0 + (k + 1) * len - 1] as [number, number], pool: seq.slice(st, st + win) }));
+}
+for (const a of AREAS) expandBands(a);
+
 export function areaFor(floor: number): AreaDef {
   return AREAS.find(a => floor >= a.floors[0] && floor <= a.floors[1]) ?? AREAS[AREAS.length - 1];
 }
