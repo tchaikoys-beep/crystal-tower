@@ -25,7 +25,8 @@ function migrate(s: GameState): GameState {
   s.reserve ??= [];
   s.missions ??= { offers: [], active: [], completed: 0 };
   s.maxDepthEver ??= 0; s.superBosses ??= {}; s.autoModes ??= {};
-  for (const m of s.monsters) m.grade ??= (m.rare ? 'rare' : 'normal');
+  for (const m of s.monsters) { m.grade ??= (m.rare ? 'rare' : 'normal'); m.learned ??= []; m.moves ??= null; }
+  s.codex.captured ??= {};
   s.run.underground ??= false; s.run.undergroundWarps ??= []; s.run.maxDepth ??= 0;
   const CMD_MAP: Record<string, string> = { cmd_two_slash: 'two_slash', cmd_jump: 'jump', cmd_steal: 'steal', cmd_capture: 'capture', cmd_focus: 'focus', cmd_msword_fire: 'magic_sword_fire', white1: 'cure', white3: 'curaga', black1: 'fire', black3: 'fira' };
   for (const h of Object.values(s.heroes)) {

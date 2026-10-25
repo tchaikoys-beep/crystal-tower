@@ -54,6 +54,8 @@ export interface MonsterAlly {
   traits: AffixRoll[];
   rare: boolean;
   grade: 'normal' | 'plus' | 'rare' | 'plus_rare';
+  learned: string[];        // レベルアップで覚えた技
+  moves: string[] | null;   // 戦闘で使う技（最大4）。null＝自動
   acc: string | null;
   gambits: Gambit[];
   hp: number;
@@ -111,7 +113,7 @@ export interface GameState {
   board: Record<string, number>;
   blessing: string | null;
   trials: string[];
-  codex: { items: string[]; affixes: string[]; monsters: string[] };
+  codex: { items: string[]; affixes: string[]; monsters: string[]; captured: Record<string, Partial<Record<'normal' | 'plus' | 'rare' | 'plus_rare', number>>> };
   stats: { battles: number; kills: number; captures: number; rebirthLog: { floor: number; tp: number }[] };
   uidCounter: number;
   settings: { auto: boolean; speed: number; autoGambit: boolean; hand: 'right' | 'left' };

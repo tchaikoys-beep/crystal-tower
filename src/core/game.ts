@@ -13,9 +13,10 @@ import { generateFloor, generateUndergroundFloor, lawForFloor, lawBlock } from '
 import { computeTP, trialMult } from './rebirth';
 import { recommendGambits } from './autogambit';
 import type { AutoMode, AffixRoll } from './types';
+import { learnsetFor } from '../data/learnsets';
 import { HEROES, JOBS } from '../data/jobs';
 import { ITEMS, tomeSpell, TOMES } from '../data/items';
-import { MONSTERS, areaFor, SUPER_BOSSES } from '../data/monsters';
+import { MONSTERS, areaFor, SUPER_BOSSES, VARIANT_OF } from '../data/monsters';
 import { AFFIXES } from '../data/affixes';
 
 export function defaultGambits(kind: 'hero' | 'ally' | 'mage' | 'healer'): Gambit[] {
@@ -57,7 +58,7 @@ export function newGame(heroId: string, seed = Date.now() % 1000000): GameState 
     version: SAVE_VERSION, seed, rngState: seed, heroes: {}, party: [], reserve: [], monsters: [], inventory: [], bag: { potion: 5, phoenix_down: 1, magi_cage: 4 }, gil: 300,
     run: newRun(1), maxFloorEver: 1, maxDepthEver: 0, superBosses: {}, autoModes: {}, rebirths: 0, tp: 0, board: { start: 1 }, blessing: null, trials: [],
     missions: { offers: [], active: [], completed: 0 },
-    codex: { items: [], affixes: [], monsters: [] }, stats: { battles: 0, kills: 0, captures: 0, rebirthLog: [] }, uidCounter: 1, settings: { auto: true, speed: 2, autoGambit: true, hand: 'right' },
+    codex: { items: [], affixes: [], monsters: [], captured: {} }, stats: { battles: 0, kills: 0, captures: 0, rebirthLog: [] }, uidCounter: 1, settings: { auto: true, speed: 2, autoGambit: true, hand: 'right' },
   };
   s.heroes[heroId] = createHero(heroId);
   s.party = ['h:' + heroId];
@@ -397,6 +398,7 @@ export function finishBattle(s: GameState, b: Battle, ev: FloorEvent): BattleSum
     if (s.monsters.length >= maxRanch(s)) { out.lines.push(`${c.name}を捕まえたが牧場がいっぱいだった`); continue; }
     const m = createMonsterAlly(s, c.ref, Math.max(1, Math.round(avgLevel(s) * 0.8)), s.run.underground ? 3 : 1, c.elite);
     s.monsters.push(m); s.stats.captures++; missionProgress(s, 'capture', c.ref, 1, s.run.floor);
+    const rec = (s.codex.captured ??= {})[c.ref] ??= {}; rec[m.grade] = (rec[m.grade] ?? 0) + 1;
     if (!s.codex.monsters.includes(c.ref)) s.codex.monsters.push(c.ref);
     out.lines.push(`${m.grade === 'plus_rare' ? '●＋レアな強個体！ ' : m.grade === 'rare' ? '●レア個体！ ' : m.grade === 'plus' ? '＋強個体 ' : ''}${MONSTERS[c.ref].name}が仲間になった（牧場へ）`);
   }
@@ -474,7 +476,10 @@ function grantExp(s: GameState, exp: number, abp: number, ap: number, b: Battle)
       const before = m.level;
       m.exp += Math.round(exp * mult);
       while (m.level < MAX_LEVEL && m.exp >= expToNext(m.level)) { m.exp -= expToNext(m.level); m.level++; }
-      if (m.level > before) { const c = buildAlly(s, m); m.hp = Math.min(c.stats.hp, m.hp + 50 * (m.level - before)); lines.push(`${MONSTERS[m.id].name}はLv${m.level}になった`); }
+      if (m.level > before) {
+        const c = buildAlly(s, m); m.hp = Math.min(c.stats.hp, m.hp + 50 * (m.level - before)); lines.push(`${MONSTERS[m.id].name}はLv${m.level}になった`);
+        for (const l of learnMonsterSkills(s, m)) lines.push(l);
+      }
       if (mult >= 1) {
         m.bondXp += (1 + boardValue(s, 'bond_pct')) * (1 + (m.traits.find(x => x.id === 'm_bond')?.value ?? 0));
         const need = 5 + m.bond * 5;
@@ -504,6 +509,42 @@ export function hasSkillByJob(hs: HeroState, skillId: string): boolean {
 }
 export function cmdSlotsFor(s: GameState, hs: HeroState): number { return cmdSlots(s) + (JOBS[hs.job].command ? 0 : 1); }
 
+/** レベルに達した習得表の技を覚える。技枠（4）に空きがあれば自動でセット */
+export function learnMonsterSkills(s: GameState, m: MonsterAlly, prefix = ''): string[] {
+  const lines: string[] = [];
+  const def = MONSTERS[m.id];
+  m.learned ??= [];
+  for (const e of learnsetFor(def, VARIANT_OF[m.id])) {
+    if (e.lv > m.level || m.learned.includes(e.skill) || def.skills.includes(e.skill)) continue;
+    m.learned.push(e.skill);
+    if (m.moves && m.moves.length < MAX_MOVES) m.moves.push(e.skill);
+    lines.push(`${def.name}は${prefix}「${SKILLS[e.skill].name}」を覚えた！${m.moves && m.moves.length >= MAX_MOVES && !m.moves.includes(e.skill) ? '（技枠がいっぱい。牧場で入れ替え）' : ''}`);
+  }
+  return lines;
+}
+export const MAX_MOVES = 4;
+/** 使える技すべて：固有技（絆で解放）＋覚えた技 */
+export function knownSkills(m: MonsterAlly): string[] {
+  const def = MONSTERS[m.id];
+  const innate = def.skills.filter((_, i) => i === 0 || m.bond >= 3 * (i + 1));
+  return [...innate, ...(m.learned ?? []).filter(k => !innate.includes(k) && SKILLS[k])];
+}
+/** 戦闘でセットされる技（最大4）。未設定なら固有技→覚えた順で自動 */
+export function activeMoves(m: MonsterAlly): string[] {
+  const known = knownSkills(m);
+  if (m.moves) return m.moves.filter(k => known.includes(k)).slice(0, MAX_MOVES);
+  return known.slice(0, MAX_MOVES);
+}
+export function setMoves(s: GameState, uid: string, moves: string[]): string | null {
+  const m = s.monsters.find(x => x.uid === uid); if (!m) return 'ない';
+  const known = knownSkills(m);
+  const mv = moves.filter((k, i, a) => known.includes(k) && a.indexOf(k) === i).slice(0, MAX_MOVES);
+  if (!mv.length) return '技は1つ以上必要';
+  m.moves = mv; return null;
+}
+export function nextLearn(m: MonsterAlly): { lv: number; skill: string } | null {
+  return learnsetFor(MONSTERS[m.id], VARIANT_OF[m.id]).find(e => e.lv > m.level) ?? null;
+}
 export function memberKey(c: { kind: string; ref: string }): string { return (c.kind === 'hero' ? 'h:' : 'm:') + c.ref; }
 export function autoModeOf(s: GameState, c: { kind: string; ref: string }): AutoMode { return (s.autoModes ??= {})[memberKey(c)] ?? 'balanced'; }
 export function setAutoMode(s: GameState, key: string, mode: AutoMode): void { (s.autoModes ??= {})[key] = mode; }
@@ -522,7 +563,7 @@ export function createMonsterAlly(s: GameState, id: string, level: number, rareM
   const traits: AffixRoll[] = [];
   for (let i = 0; i < n; i++) { let a = rng.pick(traitPool); if (traits.some(x => x.id === a.id)) a = rng.pick(traitPool); if (traits.some(x => x.id === a.id)) continue; traits.push({ id: a.id, value: Math.round(a.base * (1 + 0.3 * (tierOf(s.run.floor) - 1)) * rng.range(0.7, 1.4) * 1000) / 1000 }); }
   const grade = plus && rare ? 'plus_rare' : plus ? 'plus' : rare ? 'rare' : 'normal';
-  const m: MonsterAlly = { uid: nextUid(s), id, level, exp: 0, bond: 0, bondXp: 0, iv, nature, traits, rare, grade, acc: null, gambits: defaultGambits('ally'), hp: 99999, mp: 99999, food: {} };
+  const m: MonsterAlly = { uid: nextUid(s), id, level, exp: 0, bond: 0, bondXp: 0, iv, nature, traits, rare, grade, learned: learnsetFor(MONSTERS[id], VARIANT_OF[id]).filter(e => e.lv <= level).map(e => e.skill), moves: null, acc: null, gambits: defaultGambits('ally'), hp: 99999, mp: 99999, food: {} };
   saveRng(s, rng);
   const c = buildAlly(s, m); m.hp = c.stats.hp; m.mp = c.stats.mp;
   return m;
@@ -640,6 +681,7 @@ export function evolveMonster(s: GameState, uid: string): string | null {
   const before = MONSTERS[m.id].name;
   m.id = req.to;
   if (!s.codex.monsters.includes(m.id)) s.codex.monsters.push(m.id);
+  learnMonsterSkills(s, m, '進化で');
   const c = buildAlly(s, m); m.hp = c.stats.hp; m.mp = c.stats.mp;
   return null;
 }

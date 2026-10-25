@@ -19,7 +19,8 @@ import { HEROES, JOBS, SUPPORTS, COMMANDS, jobOfCommand } from '../data/jobs';
 import { categorySkills, availableCategories } from '../core/entity';
 import { ITEMS } from '../data/items';
 import { AFFIXES, UNIQUES } from '../data/affixes';
-import { MONSTERS, areaFor, LAW_TAG_JP, SUPER_BOSSES } from '../data/monsters';
+import { MONSTERS, areaFor, LAW_TAG_JP, SUPER_BOSSES, VARIANT_OF } from '../data/monsters';
+import { learnsetFor } from '../data/learnsets';
 import { SETS } from '../data/affixes';
 import { activeSets } from '../core/entity';
 import { lawSafeRow, gambitViolates } from '../core/lawhelp';
@@ -368,7 +369,8 @@ export class App {
         h('div', { style: 'font-size:12px' }, h('b', {}, `性格：${m.nature} `), h('span', { class: 'dim' }, '得意ステ+10%')),
         h('div', { class: 'dim', style: 'font-size:12px' }, `個体値：${ivText}`),
         h('div', { style: 'font-size:12px' }, h('b', {}, '特性：'), m.traits.length ? m.traits.map(t => AFFIXES[t.id].desc(t.value)).join('、') : 'なし'),
-        h('div', { style: 'font-size:12px' }, h('b', {}, '固有技：'), md.skills.map((k, i) => `${SKILLS[k].name}${i === 0 || m.bond >= 3 * (i + 1) ? '' : `（絆${3 * (i + 1)}で解放）`}`).join('、')),
+        h('div', { style: 'font-size:12px' }, h('b', {}, '技構成：'), G.activeMoves(m).map(k => SKILLS[k].name).join('、'), h('span', { class: 'dim' }, `（${G.knownSkills(m).length}技から${G.MAX_MOVES}つ。牧場の「技」で入れ替え）`)),
+        h('div', { class: 'dim', style: 'font-size:12px' }, `固有技：${md.skills.map((k, i) => `${SKILLS[k].name}${i === 0 || m.bond >= 3 * (i + 1) ? '' : `（絆${3 * (i + 1)}で解放）`}`).join('、')}　${(() => { const nx = G.nextLearn(m); return nx ? `次に覚える：Lv${nx.lv} ${SKILLS[nx.skill].name}` : 'レベル習得は完了'; })()}`),
         h('div', { class: 'dim', style: 'font-size:12px' }, `エサ加算：${Object.entries(m.food).map(([k, v]) => `${STAT_JP[k]}+${v}`).join(' ') || 'なし'}　進化：${md.evolveTo ? MONSTERS[md.evolveTo].name + '（Lv20＋素材×5＋魔晶石、牧場で）' : 'なし'}`));
     }
     return { chips: keys.map(k => btn(this.memberName(k), () => { (this as any)._skey = k; this.render(); }, 'small' + (k === key ? ' sel' : ''))), content: [
@@ -499,19 +501,36 @@ export class App {
         h('div', { class: 'grow' }, h('div', {}, `${c.name} `, h('span', { class: 'pill' }, where), h('span', { class: 'dim' }, ` Lv${m.level} 絆${m.bond} ${m.nature}`)),
           h('div', { class: 'dim', style: 'font-size:11px' }, `個体値：${STAT_KEYS.map(k => `${STAT_JP[k].slice(0, 2)}${Math.round(m.iv[k] * 100)}`).join(' ')}　合計${Math.round(STAT_KEYS.reduce((a, k) => a + m.iv[k], 0) * 100)}`),
           h('div', { class: 'dim', style: 'font-size:11px' }, `HP${c.stats.hp} 攻${c.atk} 防${c.def} 速${c.stats.spd}｜${ROLE_JP[MONSTERS[m.id].role]}｜特性：${m.traits.map(t => AFFIXES[t.id].desc(t.value)).join('、') || 'なし'}`),
-          h('div', { class: 'dim', style: 'font-size:11px' }, `固有技：${MONSTERS[m.id].skills.map((k, i) => SKILLS[k].name + (i === 0 || m.bond >= 3 * (i + 1) ? '' : `(絆${3 * (i + 1)})`)).join('、')}`)),
+          h('div', { class: 'dim', style: 'font-size:11px' }, `技：${G.activeMoves(m).map(k => SKILLS[k].name).join('、')}　${(() => { const nx = G.nextLearn(m); return nx ? `次 Lv${nx.lv} ${SKILLS[nx.skill].name}` : '習得完了'; })()}`)),
         h('div', { class: 'row' },
           (() => { const r = G.evolveReq(s, m); return r ? btn(`進化→${MONSTERS[r.to].name}`, () => { const e = G.evolveMonster(s, m.uid); toast(e ?? `${MONSTERS[r.to].name}に進化した！`); this.render(); }, 'small' + (r.ok ? ' sel' : ''), !r.ok) : null; })(),
           (() => { const r = G.evolveReq(s, m); return r && !r.ok ? h('span', { class: 'dim', style: 'font-size:11px' }, `進化：Lv${r.level}＋${ITEMS[r.material].name}×${r.count}＋魔晶石`) : null; })(),
           feedables.length ? selectEl([{ value: '', label: 'エサ' }, ...feedables.map(([id, n]) => ({ value: id, label: `${ITEMS[id].name}×${n}` }))], '', v => { if (!v) return; const e = G.feedMonster(s, m.uid, v); toast(e ?? 'ステータスが上がった'); this.render(); }) : null,
+          btn('技', () => { (this as any)._mv = m.uid; this.render(); }, 'small'),
           btn(cmp.includes(m.uid) ? '比較中' : '比較', () => toggleCmp(m.uid), 'small' + (cmp.includes(m.uid) ? ' sel' : '')),
           btn('放つ', () => { if (confirm(`${c.name}を放つ？素材になる`)) { G.releaseMonster(s, m.uid); this.render(); } }, 'small'),
           s.rebirths >= 5 ? btn(fuseSel === m.uid ? '融合先を選択中' : '融合', () => { (this as any)._fuse = fuseSel === m.uid ? null : m.uid; this.render(); }, 'small' + (fuseSel === m.uid ? ' sel' : '')) : null,
           fuseSel && fuseSel !== m.uid ? btn('この子を取り込む', () => { const base = s.monsters.find(x => x.uid === fuseSel)!; if (!confirm(`${MONSTERS[base.id].name}に${c.name}を融合する？${c.name}は消える`)) return; const e = G.fuseMonsters(s, fuseSel, m.uid); toast(e ?? '融合した。特性と絆の半分を引き継いだ'); (this as any)._fuse = null; this.render(); }, 'small bad') : null));
     });
+    const mvUid = (this as any)._mv as string | undefined;
+    const mvM = mvUid ? s.monsters.find(x => x.uid === mvUid) : undefined;
+    const movesSheet = mvM ? (() => {
+      const known = G.knownSkills(mvM), act = G.activeMoves(mvM); const def = MONSTERS[mvM.id];
+      const nx = G.nextLearn(mvM);
+      const table = learnsetFor(def, VARIANT_OF[mvM.id]);
+      const rows = known.map(k => { const on = act.includes(k); const sk = SKILLS[k]; return h('div', { class: 'item' + (on ? ' sel' : '') }, h('div', { class: 'grow' }, h('div', {}, sk.name, h('span', { class: 'pill' }, def.skills.includes(k) ? '固有' : '習得'), sk.mp ? h('span', { class: 'dim' }, ` MP${Math.max(sk.mp, sk.effect === 'fixed' ? 20 : 8)}`) : null), h('div', { class: 'dim', style: 'font-size:11px' }, sk.desc)),
+        btn(on ? '外す' : 'セット', () => { const next = on ? act.filter(x => x !== k) : [...act, k]; if (!on && next.length > G.MAX_MOVES) { toast(`技は${G.MAX_MOVES}つまで。先に外す`); return; } const e = G.setMoves(s, mvM.uid, next); if (e) toast(e); this.render(); }, 'small')); });
+      const locked = def.skills.map((k, i) => ({ k, i })).filter(({ i }) => !(i === 0 || mvM.bond >= 3 * (i + 1)));
+      return this.sheet(`${def.name}の技（${act.length}/${G.MAX_MOVES}）`, [
+        h('div', { class: 'list' }, ...rows),
+        locked.length ? h('div', { class: 'dim', style: 'font-size:11px;margin-top:4px' }, `絆で解放：${locked.map(({ k, i }) => `${SKILLS[k].name}（絆${3 * (i + 1)}）`).join('、')}`) : null,
+        h('div', { class: 'dim', style: 'font-size:11px;margin-top:4px' }, `レベルで習得：${table.map(e => `${e.lv > mvM.level ? '' : '✓'}Lv${e.lv} ${SKILLS[e.skill].name}`).join('、') || 'なし'}${nx ? `　→ 次は Lv${nx.lv}` : ''}`),
+      ], () => { (this as any)._mv = undefined; });
+    })() : null;
     return this.shell({ title: `魔獣牧場 ${s.monsters.length}/${G.maxRanch(s)}`, back: () => this.go('hub'),
       actions: cmp.length ? [btn('比較を解除', () => { cmp.length = 0; this.render(); }, 'small')] : [],
       content: [
+        movesSheet,
         compareBox,
         h('div', { class: 'win' }, h('div', { class: 'dim', style: 'font-size:12px' }, `編成はメニューの「編成」から。絆は前線で戦うと上がり、転生しても残る。等級：＋強個体（5%出現・守護者は確定）、●レア。守護者を捕まえると＋確定。融合（A＋B→A。Bの特性1つと絆の半分を継承、特性は4つまで）は${s.rebirths >= 5 ? '解放済み' : '転生5回で解放'}。`)),
         h('div', { class: 'win' }, h('div', { class: 'list' }, ...(rows.length ? rows : [h('div', { class: 'dim' }, 'まだ仲間がいない。魔獣使い（20階で解放）の「とらえる」か「魔石のケージ」で捕まえる。')]))),
@@ -572,7 +591,10 @@ export class App {
       h('div', { class: 'win' }, h('h2', {}, '記録'), h('div', { class: 'dim' }, `最高到達 ${s.maxFloorEver}階 ／ 裏タワー最深 地下${s.maxDepthEver ?? 0}階 ／ 転生 ${s.rebirths}回 ／ 戦闘 ${s.stats.battles} ／ 撃破 ${s.stats.kills} ／ 捕獲 ${s.stats.captures}`),
         h('div', { class: 'dim', style: 'font-size:12px' }, s.stats.rebirthLog.map((r, i) => `${i + 1}周目：${r.floor}階 +${r.tp}TP`).join('　'))),
       h('div', { class: 'win' }, h('h2', {}, '図鑑'), h('div', { class: 'dim', style: 'font-size:12px' }, `装備 ${s.codex.items.length}/${Object.values(ITEMS).filter(i => i.kind !== 'consumable' && i.kind !== 'material').length}　付加 ${s.codex.affixes.length}/${Object.keys(AFFIXES).length}　敵 ${s.codex.monsters.length}/${Object.keys(MONSTERS).length}`),
-        h('div', { class: 'dim', style: 'font-size:12px' }, '敵：' + s.codex.monsters.map(m => MONSTERS[m].name).join('、'))),
+        (() => { const cap = s.codex.captured ?? {}; const ids = Object.keys(cap); const complete = ids.filter(id => (['normal', 'plus', 'rare', 'plus_rare'] as const).every(g => (cap[id][g] ?? 0) > 0)).length;
+          const mark = (id: string) => { const r = cap[id]; return [r.normal ? '無' : '', r.plus ? '＋' : '', r.rare ? '●' : '', r.plus_rare ? '●＋' : ''].filter(Boolean).join(''); };
+          return h('div', { style: 'font-size:12px;margin-top:4px' }, h('b', {}, `捕獲記録：${ids.length}種（4等級コンプリート ${complete}種）`), h('div', { class: 'dim', style: 'font-size:11px' }, ids.length ? ids.map(id => `${MONSTERS[id]?.name ?? id}[${mark(id)}]`).join('、') : '捕獲した種族と等級（無印／＋／●／●＋）がここに残る')); })(),
+        h('div', { class: 'dim', style: 'font-size:12px' }, '遭遇：' + s.codex.monsters.map(m => MONSTERS[m]?.name ?? m).join('、'))),
       h('div', { class: 'win' }, h('h2', {}, 'セーブ書き出し'), h('div', { class: 'dim', style: 'font-size:12px' }, '端末を跨ぐときはこの文字列をコピーして、タイトル画面で読み込む。'), ta, btn('コピー', () => { navigator.clipboard?.writeText(ta.value).then(() => toast('コピーした')); }, 'small')),
       h('div', { class: 'win' }, h('h2', {}, '設定'), h('div', { class: 'row' }, h('span', { class: 'dim' }, '操作する手：'), btn('右手（ボタンは右寄せ）', () => { s.settings.hand = 'right'; this.render(); }, 'small' + (s.settings.hand === 'right' ? ' sel' : '')), btn('左手', () => { s.settings.hand = 'left'; this.render(); }, 'small' + (s.settings.hand === 'left' ? ' sel' : '')))),
       h('div', { class: 'win' }, btn('データを消して最初から', () => { if (confirm('本当に消す？')) { clear(); this.s = null; this.go('title'); } }, 'small'))] });

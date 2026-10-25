@@ -44,3 +44,18 @@ describe('データ整合性', () => {
     expect(Object.keys(AFFIXES).length).toBeGreaterThan(40);
   });
 });
+
+import { learnsetFor } from '../src/data/learnsets';
+import { MONSTERS as MON2, VARIANT_OF } from '../src/data/monsters';
+import { SKILLS as SK2 } from '../src/data/skills';
+describe('monster learnsets', () => {
+  it('every non-boss species has a learn table with valid skills', () => {
+    for (const def of Object.values(MON2)) {
+      if (def.boss) continue;
+      const ls = learnsetFor(def, VARIANT_OF[def.id]);
+      expect(ls.length, def.id).toBeGreaterThanOrEqual(3);
+      for (const e of ls) { expect(SK2[e.skill], `${def.id}:${e.skill}`).toBeTruthy(); expect(e.lv).toBeGreaterThanOrEqual(2); }
+      expect(new Set(ls.map(e => e.skill)).size).toBe(ls.length);
+    }
+  });
+});
