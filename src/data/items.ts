@@ -1,8 +1,11 @@
 import type { BaseItem } from '../core/types';
 import { SKILLS } from './skills';
 
+import { ITEMS2 } from './items2';
 export const ITEMS: Record<string, BaseItem> = {};
 function add(...list: BaseItem[]) { for (const i of list) ITEMS[i.id] = i; }
+// データ拡張 第1弾：装備＋100（art/items2_data.py）
+add(...ITEMS2);
 // 武器（エリア1〜2で出る範囲。後でエリアごとに追加）
 add(
   { id: 'broadsword', name: 'ブロードソード', kind: 'weapon', wtype: 'sword', power: 12, price: 120, area: 1, learn: { skill: 'focus', ap: 60 } },

@@ -255,7 +255,9 @@ function expandBands(area: AreaDef): void {
   const f0 = area.floors[0], len = Math.round((area.floors[1] - area.floors[0] + 1) / 4);
   area.subs = starts.map((st, k) => ({ floors: [f0 + k * len, k === 3 ? area.floors[1] : f0 + (k + 1) * len - 1] as [number, number], pool: seq.slice(st, st + win) }));
 }
+import { ITEMS2 } from './items2';
 for (const a of AREAS) {
+  for (const it of ITEMS2) if ((it.area === a.id || it.area === a.id - 1) && !a.itemPool.includes(it.id)) a.itemPool.push(it.id);
   const mine = BATCH7.filter(n => n.area === a.id);
   mine.forEach((n, i) => { const sub = a.subs[Math.min(a.subs.length - 1, Math.floor(i * a.subs.length / Math.max(1, mine.length)))]; if (!sub.pool.includes(n.id)) sub.pool.push(n.id); });
   expandBands(a);
