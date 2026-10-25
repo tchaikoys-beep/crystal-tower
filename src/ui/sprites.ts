@@ -25,13 +25,23 @@ export function iconName(itemId: string): string | null {
   if (b.kind === 'material') return has.has('icon_material') ? 'icon_material' : null;
   if (b.kind === 'consumable') return has.has('icon_consumable') ? 'icon_consumable' : null;
   if (b.kind === 'weapon' && b.wtype) { const m: Record<string, string> = { sword: 'icon_sword', katana: 'icon_katana', dagger: 'icon_dagger', spear: 'icon_spear', staff: 'icon_staff', rod: 'icon_rod', axe: 'icon_axe', bow: 'icon_bow', fist: 'icon_fist', whip: 'icon_whip' }; const n = m[b.wtype]; return n && has.has(n) ? n : null; }
-  const k: Record<string, string> = { shield: 'icon_shield', head: 'icon_helm', body: 'icon_armor', acc: 'icon_ring' };
-  const n = k[b.kind]; return n && has.has(n) ? n : null;
+  const id = b.id;
+  const kw = (ws: string[]) => ws.some(w => id.includes(w));
+  let n: string | undefined;
+  if (b.kind === 'head') n = kw(['hat', 'cap', 'hood', 'beret', 'veil', 'tiara', 'circlet']) ? 'icon_hat' : 'icon_helm';
+  else if (b.kind === 'body') n = kw(['robe', 'dress', 'gown', 'cloak', 'garb']) ? 'icon_robe' : kw(['vest', 'leather', 'cloth', 'suit', 'jacket']) ? 'icon_vest' : 'icon_armor';
+  else if (b.kind === 'acc') n = kw(['boots', 'shoes', 'greaves', 'sandals']) ? 'icon_boots' : kw(['bracelet', 'bangle', 'glove', 'gauntlet', 'armlet']) ? 'icon_bracelet' : kw(['pendant', 'amulet', 'necklace', 'charm', 'earring', 'bell', 'cloak', 'curtain', 'ribbon', 'egg', 'elemental']) ? 'icon_amulet' : 'icon_ring';
+  else if (b.kind === 'shield') n = 'icon_shield';
+  return n && has.has(n) ? n : null;
 }
 export function iconPath(itemId: string): string | undefined { const n = iconName(itemId); return n ? `./sprites/${n}.png` : undefined; }
 export function iconEl(itemId: string, size = 24): HTMLElement | null {
   const p = iconPath(itemId); if (!p) return null;
   const img = document.createElement('img'); img.src = p; img.style.cssText = `width:${size}px;height:${size}px;image-rendering:pixelated;flex:none`; return img;
+}
+export function uiIconEl(name: string, size = 18): HTMLElement | null {
+  if (!has.has('icon_ui_' + name)) return null;
+  const img = document.createElement('img'); img.src = `./sprites/icon_ui_${name}.png`; img.style.cssText = `width:${size}px;height:${size}px;image-rendering:pixelated;vertical-align:middle;margin-right:4px`; return img;
 }
 export function preloadAll() { for (const n of SPRITE_FILES) load(n); }
 export function faceEl(heroId: string, size = 36): HTMLElement | null {

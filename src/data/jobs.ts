@@ -163,3 +163,6 @@ export const HEROES: Record<string, HeroDef> = {
   firion: { id: 'firion', name: 'フリオニール', title: 'FF2', mult: { hp: 1.05, str: 1.1, vit: 1.05, mag: 0.95, luck: 1.1 }, innateJob: 'freelancer', limit: 'limit_firion', join: { kind: 'floor', floor: 20 } },
   cecil: { id: 'cecil', name: 'セシル', title: 'FF4', mult: { hp: 1.1, str: 1.1, vit: 1.15, spr: 1.1 }, innateJob: 'knight', limit: 'limit_cecil', join: { kind: 'floor', floor: 30 } },
 };
+// データ拡張 第1弾：英雄＋14（art/batch8_data.py で生成）
+import { HEROES2 } from './heroes2';
+for (const h of HEROES2) HEROES[h.id] = { id: h.id, name: h.name, title: h.title, mult: h.mult as HeroDef['mult'], innateJob: h.innateJob, limit: h.limit, join: { kind: 'floor', floor: h.joinFloor } };

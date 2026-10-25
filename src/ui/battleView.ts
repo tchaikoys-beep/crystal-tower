@@ -7,7 +7,7 @@ import { STATUS_JP, type Status } from '../core/types';
 import { ITEMS } from '../data/items';
 import { SKILLS } from '../data/skills';
 import { areaFor } from '../data/monsters';
-import { heroSprite, enemySprite, bgSprite, preloadAll, statusIcon, statusIconEl, heroRegistered, enemyRegistered, type HeroPose } from './sprites';
+import { heroSprite, enemySprite, bgSprite, preloadAll, statusIcon, statusIconEl, heroRegistered, enemyRegistered, type HeroPose, uiIconEl } from './sprites';
 
 interface FloatText { uid: string; text: string; color: string; t: number }
 
@@ -207,12 +207,13 @@ export class BattleView {
     const mark = (label: string, cmd: Command) => vio(cmd) ? '⚠' + label : label;
     const guard = (cmd: Command, fn: () => void) => () => { if (vio(cmd) && !confirm(`「${cmd.name}」はロウ違反。それでも使う？`)) return; fn(); };
     if (this.menu.level === 'root') {
-      el.push(btn(mark('たたかう', c.commands[0]), guard(c.commands[0], () => this.pickTarget({ cmd: c.commands[0] })), 'primary'));
+      const withIcon = (b: HTMLElement, ic: string) => { const i = uiIconEl(ic); if (i) b.prepend(i); return b; };
+      el.push(withIcon(btn(mark('たたかう', c.commands[0]), guard(c.commands[0], () => this.pickTarget({ cmd: c.commands[0] })), 'primary'), 'sword'));
       for (const g of groups) el.push(btn(g, () => { this.menu = { level: 'group', group: g }; this.renderCommands(); }));
-      el.push(btn('アイテム', () => { this.menu = { level: 'item' }; this.renderCommands(); }));
-      el.push(btn('ぼうぎょ', () => this.exec({ cmd: c.commands.find(k => k.id === 'defend')! })));
-      if (c.limitSkill) { const lc = b.commandFor(c, 'limit'); el.push(btn(lc ? mark('リミット技', lc) : 'リミット技', () => this.pickTarget({ cmd: b.commandFor(c, 'limit')! }), c.limit >= 100 ? 'sel' : '', c.limit < 100)); }
-      el.push(btn('にげる', () => this.exec({ cmd: { id: 'flee', name: 'にげる', skill: SKILLS.flee, group: 'basic' } }), '', !b.opt.canFlee));
+      el.push(withIcon(btn('アイテム', () => { this.menu = { level: 'item' }; this.renderCommands(); }), 'bag'));
+      el.push(withIcon(btn('ぼうぎょ', () => this.exec({ cmd: c.commands.find(k => k.id === 'defend')! })), 'shield'));
+      if (c.limitSkill) { const lc = b.commandFor(c, 'limit'); el.push(withIcon(btn(lc ? mark('リミット技', lc) : 'リミット技', () => this.pickTarget({ cmd: b.commandFor(c, 'limit')! }), c.limit >= 100 ? 'sel' : '', c.limit < 100), 'star')); }
+      el.push(withIcon(btn('にげる', () => this.exec({ cmd: { id: 'flee', name: 'にげる', skill: SKILLS.flee, group: 'basic' } }), '', !b.opt.canFlee), 'run'));
     } else if (this.menu.level === 'group') {
       for (const k of c.commands.filter(k => k.group === this.menu.group)) el.push(btn(mark(`${k.name}${k.skill.mp ? ` ${k.skill.mp}` : ''}`, k), guard(k, () => this.pickTarget({ cmd: k })), vio(k) ? 'bad' : '', k.skill.mp > c.mp));
       el.push(btn('もどる', () => { this.menu = { level: 'root' }; this.renderCommands(); }, 'small'));

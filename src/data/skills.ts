@@ -234,5 +234,8 @@ add(
   A('smn_leviathan', '召喚：リヴァイアサン', 'summon', 36, { target: 'enemies', effect: 'magic', power: 125, element: 'water', tag: 'magic' }, '大海嘯'),
   A('smn_bahamut', '召喚：バハムート', 'summon', 48, { target: 'enemies', effect: 'magic', power: 170, tag: 'magic' }, 'メガフレア：無属性の超火力'),
 );
+// 英雄＋14 のリミット技（src/data/heroes2.ts から）
+import { HEROES2 } from './heroes2';
+for (const h of HEROES2) SKILLS[h.limit] = { id: h.limit, name: h.limitName, kind: 'limit', mp: 0, tag: 'limit', desc: 'リミット技', ...(h.limitDef as Partial<Skill>) } as Skill;
 export function skill(id: string): Skill { const s = SKILLS[id]; if (!s) throw new Error('unknown skill ' + id); return s; }
 export function skillsOfCategory(cat: string): Skill[] { return Object.values(SKILLS).filter(s => s.category === cat); }
