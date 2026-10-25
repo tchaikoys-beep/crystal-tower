@@ -8,6 +8,7 @@ import { Rng } from './rng';
 import { physDamage, magicDamage, healAmount, atbRate, captureChance } from './formulas';
 import { SKILLS } from '../data/skills';
 import { ITEMS } from '../data/items';
+import { areaElement } from '../data/monsters';
 
 export interface LogEntry { text: string; kind: 'info' | 'dmg' | 'heal' | 'bad' | 'good' | 'law' | 'sys' }
 export interface Fx { type: 'hit' | 'heal' | 'miss' | 'status' | 'act'; uid: string; amount?: number; text?: string; crit?: boolean }
@@ -134,7 +135,7 @@ export class Battle {
   }
 
   act(c: Combatant, action: Action): void {
-    const skill = action.cmd.skill;
+    let skill = action.cmd.skill;
     c.atb = 0;
     // ロウ判定
     const tags = this.actionTags(c, skill, action.cmd);
@@ -154,6 +155,13 @@ export class Battle {
     const targets = this.resolveTargets(c, skill, action.targetUid);
     if (c.kind === 'hero') { if (skill.kind === 'spell') this.uses.push({ uid: c.uid, kind: 'spell', key: skill.id }); else if (skill.effect === 'phys') this.uses.push({ uid: c.uid, kind: 'weapon', key: c.weaponType ?? 'fist' }); }
     if (skill.effect !== 'defend' && skill.effect !== 'flee' && skill.effect !== 'focus') this.say(`${c.name}の${skill.name}`);
+    // 風水士：ちけい はその階層の属性になる
+    if (skill.id === 'terrain' || skill.id === 'terrain_ex') skill = { ...skill, element: areaElement(this.opt.floor), power: skill.power * (c.supports.has('terrain_mastery') ? 1.5 : 1) };
+    // 薬師：薬の知識で調合の回復量2倍
+    if (skill.category === 'mix' && skill.effect === 'heal' && c.supports.has('item_up')) skill = { ...skill, power: skill.power * 2 };
+    const times = skill.kind === 'spell' && c.supports.has('doublecast') && c.kind === 'hero' ? 2 : 1;
+    for (let rep = 0; rep < times; rep++) {
+    if (rep) this.say(`${c.name}の連続魔！`, 'good');
     switch (skill.effect) {
       case 'phys': for (const t of targets) this.physHit(c, t, skill); break;
       case 'magic': for (const t of targets) this.magicHit(c, t, skill); break;
@@ -179,6 +187,7 @@ export class Battle {
         if (skill.id === 'self_destruct') { c.hp = 0; this.say(`${c.name}は自爆した`, 'bad'); }
       } break;
       case 'limit': break;
+    }
     }
     this.after();
   }
@@ -213,6 +222,7 @@ export class Battle {
       let mult = skill.power * c.focus;
       if (c.mods.brave && c.hp >= c.stats.hp) mult *= 1.5;
       if (c.supports.has('desperate') && c.hp <= c.stats.hp * 0.3) mult *= 1.5;
+      if (c.statuses.berserk) mult *= 1.5;
       if (t.family in c.mods.slayer) mult *= 1 + c.mods.slayer[t.family];
       if (t.boss && c.mods.slayer.boss) mult *= 1 + c.mods.slayer.boss;
       const crit = this.rng.chance(c.mods.crit);

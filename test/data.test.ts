@@ -30,7 +30,7 @@ describe('データ整合性', () => {
   it('ジョブの技とサポートが存在する', () => {
     for (const j of Object.values(JOBS)) {
       if (j.command) expect(COMMANDS[j.command]).toBeTruthy();
-      for (const u of j.unlocks) { expect(SKILLS[u.skill], `${j.name} ${u.skill}`).toBeTruthy(); expect(SKILLS[u.skill].category).toBe(j.command); }
+      for (const u of j.unlocks) { expect(SKILLS[u.skill], `${j.name} ${u.skill}`).toBeTruthy(); if (j.id !== 'redmage') expect(SKILLS[u.skill].category).toBe(j.command); }  // 赤魔道士は白・黒・時の魔法を借りる
       for (const l of j.learn) expect(SUPPORTS[l.ability], `${j.name} ${l.ability}`).toBeTruthy();
     }
     for (const h of Object.values(HEROES)) { expect(JOBS[h.innateJob]).toBeTruthy(); expect(SKILLS[h.limit]).toBeTruthy(); }

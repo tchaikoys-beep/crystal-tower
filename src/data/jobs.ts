@@ -63,9 +63,12 @@ export const SUPPORTS: Record<string, SupportAbility> = {
   abp_up: { id: 'abp_up', name: 'ABP+30%', desc: '獲得ABP+30%', cost: 5 },
   drop_up: { id: 'drop_up', name: 'ドロップ率UP', desc: 'ドロップ率+20%', cost: 4 },
   rare_up: { id: 'rare_up', name: 'レア運', desc: 'レアリティ上振れ率UP', cost: 5 },
+  doublecast: { id: 'doublecast', name: '連続魔', desc: '魔法を1回の行動で2回唱える', cost: 9 },
+  item_up: { id: 'item_up', name: '薬の知識', desc: 'アイテムと調合の回復量2倍', cost: 4 },
+  terrain_mastery: { id: 'terrain_mastery', name: '地形の心得', desc: '地形技の威力+50%', cost: 4 },
 };
 /** 装備にランダムで付く習得アビリティの候補（ティアでコスト上限が上がる） */
-export const LEARNABLE_POOL = Object.keys(SUPPORTS).filter(k => !['brawl'].includes(k));
+export const LEARNABLE_POOL = Object.keys(SUPPORTS).filter(k => !['brawl', 'doublecast', 'terrain_mastery'].includes(k));
 
 export const COMMANDS: Record<string, CommandCategory> = {
   white: { id: 'white', name: '白魔法', desc: '回復と補助の魔法' },
@@ -79,6 +82,14 @@ export const COMMANDS: Record<string, CommandCategory> = {
   msword: { id: 'msword', name: '魔法剣', desc: '剣に魔法を乗せる' },
   ranger: { id: 'ranger', name: '弓技', desc: '狩人の射撃技' },
   ninja: { id: 'ninja', name: '忍術', desc: '忍者の術' },
+  samurai: { id: 'samurai', name: '刀技', desc: '侍の刀の技。居合・銭投げ' },
+  rage: { id: 'rage', name: '乱撃', desc: 'バーサーカーの荒技' },
+  mix: { id: 'mix', name: '調合', desc: '薬師の調合。魔力に依らない回復・爆薬' },
+  geo: { id: 'geo', name: '地形', desc: '風水士の技。階層の属性で攻撃、MP0' },
+  song: { id: 'song', name: '歌', desc: '吟遊詩人の歌。味方全体の強化' },
+  dance: { id: 'dance', name: '踊り', desc: '踊り子の踊り。敵全体の弱体と吸収' },
+  red: { id: 'red', name: '赤魔法', desc: '白・黒・時の低位魔法' },
+  summon: { id: 'summon', name: '召喚', desc: '召喚獣を呼ぶ。全体攻撃と全体強化' },
 };
 
 export const JOBS: Record<string, JobDef> = {
@@ -116,6 +127,31 @@ export const JOBS: Record<string, JobDef> = {
   timemage: { id: 'timemage', name: '時魔道士', mult: { hp: 0.8, mp: 1.3, str: 0.6, mag: 1.2, spr: 1.1, spd: 1.15 }, command: 'time',
     unlocks: [{ lv: 1, skill: 'slow' }, { lv: 1, skill: 'regen' }, { lv: 3, skill: 'haste' }, { lv: 5, skill: 'gravity' }, { lv: 7, skill: 'stop' }, { lv: 9, skill: 'comet' }, { lv: 12, skill: 'slowga' }, { lv: 15, skill: 'hastega' }, { lv: 20, skill: 'meteor' }],
     learn: [{ lv: 3, ability: 'mp10' }], weapons: ['rod', 'staff'], unlockFloor: 100 },
+  // ---- データ拡張 第1弾：新ジョブ8種
+  redmage: { id: 'redmage', name: '赤魔道士', mult: { hp: 0.95, mp: 1.2, str: 0.95, vit: 0.9, mag: 1.1, spr: 1.05, spd: 1.05 }, command: 'red',
+    unlocks: [{ lv: 1, skill: 'cure' }, { lv: 1, skill: 'fire' }, { lv: 1, skill: 'blizzard' }, { lv: 1, skill: 'thunder' }, { lv: 2, skill: 'protect' }, { lv: 3, skill: 'poison' }, { lv: 4, skill: 'cura' }, { lv: 5, skill: 'slow' }, { lv: 6, skill: 'fira' }, { lv: 6, skill: 'blizzara' }, { lv: 6, skill: 'thundara' }, { lv: 7, skill: 'shell' }, { lv: 9, skill: 'haste' }, { lv: 12, skill: 'curaga' }],
+    learn: [{ lv: 3, ability: 'mp10' }, { lv: 8, ability: 'mag10' }, { lv: 20, ability: 'doublecast' }], weapons: ['sword', 'rod', 'dagger'], unlockFloor: 40 },
+  berserker: { id: 'berserker', name: 'バーサーカー', mult: { hp: 1.35, str: 1.4, vit: 1.1, mag: 0.4, spr: 0.7, spd: 0.85 }, command: 'rage',
+    unlocks: [{ lv: 1, skill: 'rampage' }, { lv: 3, skill: 'war_cry' }, { lv: 6, skill: 'crush' }, { lv: 10, skill: 'reckless' }, { lv: 16, skill: 'earthshatter' }],
+    learn: [{ lv: 2, ability: 'str10' }, { lv: 7, ability: 'desperate' }, { lv: 14, ability: 'hp20' }, { lv: 20, ability: 'res_berserk' }], weapons: ['axe', 'sword'], unlockFloor: 80 },
+  chemist: { id: 'chemist', name: '薬師', mult: { hp: 1.0, mp: 1.1, str: 0.85, vit: 0.95, mag: 1.0, spr: 1.2, spd: 1.05 }, command: 'mix',
+    unlocks: [{ lv: 1, skill: 'mix_potion' }, { lv: 2, skill: 'mix_remedy' }, { lv: 4, skill: 'mix_bomb' }, { lv: 6, skill: 'mix_poison' }, { lv: 8, skill: 'mix_phoenix' }, { lv: 12, skill: 'mix_dragon' }, { lv: 20, skill: 'mix_last' }],
+    learn: [{ lv: 2, ability: 'item_up' }, { lv: 6, ability: 'auto_potion' }, { lv: 12, ability: 'drop_up' }, { lv: 18, ability: 'res_poison' }], weapons: ['dagger', 'staff', 'bow'], unlockFloor: 90 },
+  geomancer: { id: 'geomancer', name: '風水士', mult: { hp: 1.0, mp: 1.1, str: 0.9, vit: 0.95, mag: 1.15, spr: 1.1, spd: 1.1 }, command: 'geo',
+    unlocks: [{ lv: 1, skill: 'terrain' }, { lv: 4, skill: 'gaia_quake' }, { lv: 6, skill: 'wind_slash' }, { lv: 9, skill: 'whirlpool' }, { lv: 15, skill: 'terrain_ex' }],
+    learn: [{ lv: 2, ability: 'treasure' }, { lv: 5, ability: 'res_earth' }, { lv: 10, ability: 'terrain_mastery' }, { lv: 16, ability: 'res_wind' }], weapons: ['staff', 'dagger', 'whip'], unlockFloor: 110 },
+  samurai: { id: 'samurai', name: '侍', mult: { hp: 1.15, str: 1.3, vit: 1.1, mag: 0.6, spr: 0.9, spd: 1.05 }, command: 'samurai',
+    unlocks: [{ lv: 1, skill: 'mineuchi' }, { lv: 3, skill: 'zeninage' }, { lv: 6, skill: 'shirahadori' }, { lv: 10, skill: 'iainuki' }, { lv: 16, skill: 'zantetsuken' }],
+    learn: [{ lv: 2, ability: 'eva10' }, { lv: 6, ability: 'counter' }, { lv: 12, ability: 'crit10' }, { lv: 20, ability: 'two_handed' }], weapons: ['katana'], unlockFloor: 120 },
+  bard: { id: 'bard', name: '吟遊詩人', mult: { hp: 0.85, mp: 1.3, str: 0.7, vit: 0.8, mag: 1.05, spr: 1.25, spd: 1.15 }, command: 'song',
+    unlocks: [{ lv: 1, skill: 'lullaby' }, { lv: 3, skill: 'healing_song' }, { lv: 6, skill: 'guard_song' }, { lv: 9, skill: 'requiem' }, { lv: 14, skill: 'hero_song' }],
+    learn: [{ lv: 2, ability: 'mp10' }, { lv: 6, ability: 'res_silence' }, { lv: 12, ability: 'auto_regen' }, { lv: 18, ability: 'exp_up' }], weapons: ['bow', 'dagger'], unlockFloor: 140 },
+  dancer: { id: 'dancer', name: '踊り子', mult: { hp: 0.9, mp: 1.0, str: 1.05, vit: 0.85, mag: 1.0, spd: 1.35, luck: 1.2 }, command: 'dance',
+    unlocks: [{ lv: 1, skill: 'slow_dance' }, { lv: 3, skill: 'tempting_tango' }, { lv: 5, skill: 'mystery_waltz' }, { lv: 9, skill: 'sword_dance' }, { lv: 14, skill: 'jitterbug' }],
+    learn: [{ lv: 2, ability: 'eva10' }, { lv: 6, ability: 'spd10' }, { lv: 12, ability: 'gil_up' }, { lv: 18, ability: 'multi10' }], weapons: ['dagger', 'whip'], unlockFloor: 160 },
+  summoner: { id: 'summoner', name: '召喚士', mult: { hp: 0.8, mp: 1.5, str: 0.5, vit: 0.75, mag: 1.4, spr: 1.2, spd: 0.95 }, command: 'summon',
+    unlocks: [{ lv: 1, skill: 'smn_chocobo' }, { lv: 3, skill: 'smn_shiva' }, { lv: 3, skill: 'smn_ifrit' }, { lv: 3, skill: 'smn_ramuh' }, { lv: 7, skill: 'smn_titan' }, { lv: 9, skill: 'smn_golem' }, { lv: 11, skill: 'smn_carbuncle' }, { lv: 13, skill: 'smn_odin' }, { lv: 16, skill: 'smn_phoenix' }, { lv: 18, skill: 'smn_leviathan' }, { lv: 20, skill: 'smn_bahamut' }],
+    learn: [{ lv: 5, ability: 'mp20' }, { lv: 12, ability: 'mag10' }, { lv: 18, ability: 'half_mp' }], weapons: ['rod', 'staff'], unlockFloor: 200 },
 };
 export function jobOfCommand(cat: string): JobDef | undefined { return Object.values(JOBS).find(j => j.command === cat); }
 

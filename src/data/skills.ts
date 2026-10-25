@@ -180,5 +180,59 @@ add(
   S({ id: 'brave_slash_m', name: '剛剣', kind: 'monster', mp: 0, target: 'enemy', effect: 'phys', power: 1.8, tag: 'physical', desc: '強い斬撃' }),
   S({ id: 'wing_attack', name: '翼撃', kind: 'monster', mp: 0, target: 'enemies', effect: 'phys', power: 0.8, element: 'wind', tag: 'physical', desc: '風の全体攻撃' }),
 );
+
+// ---- データ拡張 第1弾：新ジョブ8種の技
+add(
+  // 侍：刀技
+  A('mineuchi', '峰打ち', 'samurai', 0, { target: 'enemy', effect: 'status', status: 'paralyze', chance: 0.6, power: 0, tag: 'physical' }, '刀の峰で打ち、麻痺させる'),
+  A('zeninage', '銭投げ', 'samurai', 0, { target: 'enemies', effect: 'gil_toss', power: 1 }, 'ギルを投げて全体にダメージ（階×50ギル）'),
+  A('shirahadori', '白刃取り', 'samurai', 4, { target: 'self', effect: 'buff', status: 'blink', power: 0 }, '次の物理攻撃をかわしやすくなる'),
+  A('iainuki', '居合抜き', 'samurai', 10, { target: 'enemy', effect: 'fixed', power: -0.5, tag: 'physical' }, '敵HPの50%を斬る（ボスは12%）'),
+  A('zantetsuken', '斬鉄剣', 'samurai', 14, { target: 'enemy', effect: 'phys', power: 2.8 }, '鉄をも断つ一閃'),
+  // バーサーカー：乱撃
+  A('rampage', '乱撃', 'rage', 0, { target: 'enemy', effect: 'phys', power: 0.7, hits: 3 }, '3連打'),
+  A('war_cry', '雄叫び', 'rage', 0, { target: 'self', effect: 'buff', status: 'berserk', power: 0 }, 'バーサク状態：攻撃×1.5'),
+  A('crush', '粉砕', 'rage', 6, { target: 'enemy', effect: 'phys', power: 1.9 }, '重い一撃'),
+  A('reckless', '捨て身', 'rage', 10, { target: 'enemies', effect: 'phys', power: 1.4 }, '全体を薙ぎ払う'),
+  A('earthshatter', '大地割り', 'rage', 16, { target: 'enemies', effect: 'phys', power: 2.0, element: 'earth' }, '地属性の全体攻撃'),
+  // 薬師：調合
+  A('mix_potion', '調合：回復薬', 'mix', 0, { target: 'ally', effect: 'heal', power: 300, tag: 'heal' }, 'HP300回復（魔力に依らない）'),
+  A('mix_remedy', '調合：万能薬', 'mix', 0, { target: 'ally', effect: 'cure', power: 0, tag: 'heal' }, '状態異常を全て治す'),
+  A('mix_bomb', '調合：爆薬', 'mix', 0, { target: 'enemies', effect: 'magic', power: 90, element: 'fire', tag: 'fire' }, '炎の爆発で全体攻撃'),
+  A('mix_poison', '調合：毒薬', 'mix', 0, { target: 'enemy', effect: 'status', status: 'poison', chance: 0.95, power: 0, tag: 'status' }, 'ほぼ確実に毒にする'),
+  A('mix_phoenix', '調合：蘇生薬', 'mix', 8, { target: 'dead_ally', effect: 'revive', power: 0.5, tag: 'heal' }, 'HP50%で蘇生'),
+  A('mix_dragon', '調合：竜の力', 'mix', 10, { target: 'allies', effect: 'buff', status: 'protect', power: 0 }, '味方全体にプロテス'),
+  A('mix_last', '調合：ラストエリクサー', 'mix', 30, { target: 'allies', effect: 'heal', power: 9999, tag: 'heal' }, '味方全体のHPを全回復'),
+  // 風水士：地形（terrain はその階層の属性になる）
+  A('terrain', 'ちけい', 'geo', 0, { target: 'enemies', effect: 'magic', power: 65, tag: 'magic' }, 'その階層の属性で全体攻撃。MP0'),
+  A('gaia_quake', '大地の怒り', 'geo', 6, { target: 'enemies', effect: 'magic', power: 75, element: 'earth', tag: 'magic' }, '地属性の全体攻撃'),
+  A('wind_slash', 'かまいたち', 'geo', 6, { target: 'enemies', effect: 'magic', power: 75, element: 'wind', tag: 'magic' }, '風属性の全体攻撃'),
+  A('whirlpool', '渦潮', 'geo', 8, { target: 'enemies', effect: 'magic', power: 70, element: 'water', status: 'slow', chance: 0.3, tag: 'magic' }, '水属性＋スロウ'),
+  A('terrain_ex', 'ちけい・極', 'geo', 0, { target: 'enemies', effect: 'magic', power: 140, tag: 'magic' }, '階層属性の強力な全体攻撃。MP0'),
+  // 吟遊詩人：歌
+  A('lullaby', '子守唄', 'song', 4, { target: 'enemies', effect: 'status', status: 'sleep', chance: 0.5, power: 0, tag: 'status' }, '敵全体を眠らせる'),
+  A('guard_song', '守りの歌', 'song', 6, { target: 'allies', effect: 'buff', status: 'protect', power: 0 }, '味方全体にプロテス'),
+  A('healing_song', '癒しの歌', 'song', 6, { target: 'allies', effect: 'buff', status: 'regen', power: 0 }, '味方全体にリジェネ'),
+  A('requiem', 'レクイエム', 'song', 8, { target: 'enemies', effect: 'magic', power: 70, element: 'holy', tag: 'magic' }, '聖属性の歌。アンデッドに効く'),
+  A('hero_song', '英雄の歌', 'song', 16, { target: 'allies', effect: 'buff', status: 'haste', power: 0 }, '味方全体にヘイスト'),
+  // 踊り子：踊り
+  A('slow_dance', 'スロウダンス', 'dance', 0, { target: 'enemies', effect: 'status', status: 'slow', chance: 0.6, power: 0, tag: 'status' }, '敵全体をスロウに'),
+  A('tempting_tango', '誘惑のタンゴ', 'dance', 0, { target: 'enemies', effect: 'status', status: 'blind', chance: 0.6, power: 0, tag: 'status' }, '敵全体を暗闇に'),
+  A('mystery_waltz', 'ミステリーワルツ', 'dance', 0, { target: 'enemy', effect: 'drain', power: 50, element: 'dark', tag: 'magic' }, 'HPを吸い取る'),
+  A('sword_dance', '剣の舞', 'dance', 8, { target: 'enemy', effect: 'phys', power: 2.4 }, '華麗な連撃'),
+  A('jitterbug', 'ジルバ', 'dance', 12, { target: 'enemies', effect: 'drain', power: 60, element: 'dark', tag: 'magic' }, '全体からHPを吸い取る'),
+  // 召喚士：召喚（魔法扱い）
+  A('smn_chocobo', '召喚：チョコボ', 'summon', 6, { target: 'enemy', effect: 'magic', power: 45, tag: 'magic' }, 'チョコボキック'),
+  A('smn_shiva', '召喚：シヴァ', 'summon', 14, { target: 'enemies', effect: 'magic', power: 78, element: 'ice', tag: 'magic' }, 'ダイヤモンドダスト'),
+  A('smn_ifrit', '召喚：イフリート', 'summon', 14, { target: 'enemies', effect: 'magic', power: 78, element: 'fire', tag: 'fire' }, '地獄の火炎'),
+  A('smn_ramuh', '召喚：ラムウ', 'summon', 14, { target: 'enemies', effect: 'magic', power: 78, element: 'thunder', tag: 'magic' }, '裁きの雷'),
+  A('smn_titan', '召喚：タイタン', 'summon', 20, { target: 'enemies', effect: 'magic', power: 95, element: 'earth', tag: 'magic' }, '大地の怒り'),
+  A('smn_golem', '召喚：ゴーレム', 'summon', 18, { target: 'allies', effect: 'buff', status: 'protect', power: 0 }, '味方全体にプロテス'),
+  A('smn_carbuncle', '召喚：カーバンクル', 'summon', 18, { target: 'allies', effect: 'buff', status: 'shell', power: 0 }, '味方全体にシェル'),
+  A('smn_odin', '召喚：オーディン', 'summon', 30, { target: 'enemies', effect: 'fixed', power: -0.5, tag: 'magic' }, '斬鉄剣：全体のHP50%（ボス12%）'),
+  A('smn_phoenix', '召喚：フェニックス', 'summon', 32, { target: 'dead_ally', effect: 'revive', power: 1.0, tag: 'heal' }, '全快で蘇生'),
+  A('smn_leviathan', '召喚：リヴァイアサン', 'summon', 36, { target: 'enemies', effect: 'magic', power: 125, element: 'water', tag: 'magic' }, '大海嘯'),
+  A('smn_bahamut', '召喚：バハムート', 'summon', 48, { target: 'enemies', effect: 'magic', power: 170, tag: 'magic' }, 'メガフレア：無属性の超火力'),
+);
 export function skill(id: string): Skill { const s = SKILLS[id]; if (!s) throw new Error('unknown skill ' + id); return s; }
 export function skillsOfCategory(cat: string): Skill[] { return Object.values(SKILLS).filter(s => s.category === cat); }

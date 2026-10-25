@@ -1,4 +1,4 @@
-import type { MonsterDef, AreaDef, LawDef } from '../core/types';
+import type { Element, MonsterDef, AreaDef, LawDef } from '../core/types';
 
 export const MONSTERS: Record<string, MonsterDef> = {};
 function add(...l: MonsterDef[]) { for (const m of l) MONSTERS[m.id] = m; }
@@ -261,6 +261,11 @@ for (const a of AREAS) {
   expandBands(a);
 }
 
+/** 風水士「ちけい」用：階層の属性 */
+export function areaElement(floor: number): Element {
+  const table: Element[] = ['earth', 'fire', 'wind', 'holy', 'dark', 'poison', 'thunder', 'ice', 'dark', 'water'];
+  return table[(areaFor(floor).id - 1) % table.length];
+}
 export function areaFor(floor: number): AreaDef {
   return AREAS.find(a => floor >= a.floors[0] && floor <= a.floors[1]) ?? AREAS[AREAS.length - 1];
 }
