@@ -8,7 +8,10 @@ const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', e => errors.push('pageerror: ' + e.message));
 page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
-const dir = '/tmp/claude-0/-home-user/76c2b766-ca9a-5e27-a4c5-81695450aebc/scratchpad/shots/';
+import { mkdirSync } from 'node:fs';
+const dir = (process.env.SHOT_DIR ?? '/tmp/claude-0/-home-user-crystal-tower/76c2b766-ca9a-5e27-a4c5-81695450aebc/scratchpad/shots') + '/';
+mkdirSync(dir, { recursive: true });
+page.setDefaultTimeout(60000);  // ビルド直後はviteの依存最適化で初回ロードが遅い
 const shot = (n) => page.screenshot({ path: dir + n + '.png' });
 await page.goto('http://localhost:5173/');
 await page.waitForTimeout(500);
