@@ -10,7 +10,7 @@ import { STATUS_JP, type Status } from '../core/types';
 import { ITEMS } from '../data/items';
 import { SKILLS } from '../data/skills';
 import { areaFor } from '../data/monsters';
-import { heroSprite, enemySprite, bgSprite, preloadAll, statusIcon, statusIconEl, heroRegistered, enemyRegistered, type HeroPose, uiIconEl } from './sprites';
+import { heroSprite, enemySprite, bgSprite, preloadAll, statusIcon, statusIconEl, heroRegistered, enemyRegistered, type HeroPose, uiIconEl, faceSprite } from './sprites';
 
 interface FloatText { uid: string; text: string; color: string; t: number }
 
@@ -30,6 +30,7 @@ export class BattleView {
   particles: Particle[] = [];
   shakeUntil = 0; shakeMag = 0;
   victoryAt = 0;
+  cutin: { until: number; start: number; name: string; sub: string; face: string | null; kind: 'limit' | 'summon' } | null = null;
   last = 0;
   raf = 0;
   logCount = 0;
@@ -71,7 +72,7 @@ export class BattleView {
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
     const b = this.battle;
-    if (b.result === 'running' && !b.pending) {
+    if (b.result === 'running' && !b.pending && !(this.cutin && now < this.cutin.until)) {
       b.tick(dt * this.speed);
       if (b.pending) { this.menu = { level: 'root' }; this.renderCommands(); }
     }
@@ -103,7 +104,9 @@ export class BattleView {
       if (f.type === 'miss') { this.floats.push({ uid: f.uid, text: f.text ?? 'miss', color: '#9fb0e0', t: now }); SFX.miss(); }
       if (f.type === 'status') { this.floats.push({ uid: f.uid, text: f.text ?? '', color: '#ff8ae0', t: now }); if (p) this.sparkle(p.x, p.y, '#f8e', now); SFX.status(); }
       if (f.type === 'capture') { if (p) this.sparkle(p.x, p.y, '#ffd', now, 24); SFX.capture(); }
-      if (f.type === 'limit') { this.shakeUntil = now + 300; this.shakeMag = 3; if (p) this.sparkle(p.x, p.y, '#ffcf5a', now, 30); SFX.limit(); }
+      if (f.type === 'limit') { this.shakeUntil = now + 300; this.shakeMag = 3; if (p) this.sparkle(p.x, p.y, '#ffcf5a', now, 30); SFX.limit();
+        const c = b.players.find(x => x.uid === f.uid); this.cutin = { start: now, until: now + 1100, name: f.text ?? '', sub: `${c?.name ?? ''}のリミット技`, face: c?.kind === 'hero' ? c.spriteId : null, kind: 'limit' }; }
+      if (f.type === 'summon') { const c = b.players.find(x => x.uid === f.uid); this.cutin = { start: now, until: now + 1000, name: f.text ?? '', sub: '召喚', face: c?.kind === 'hero' ? c.spriteId : null, kind: 'summon' }; SFX.magic('holy'); }
     }
     b.fx.length = 0;
     this.floats = this.floats.filter(f => now - f.t < 900);
@@ -132,6 +135,30 @@ export class BattleView {
   }
   private sparkle(x: number, y: number, color: string, now: number, n = 14) {
     for (let i = 0; i < n; i++) this.particles.push({ x: x + (Math.random() - 0.5) * 28, y: y + (Math.random() - 0.3) * 30, vx: 0, vy: -40 - Math.random() * 40, t0: now + Math.random() * 120, life: 600, color, size: 2 + Math.random() * 2, kind: 'spark' });
+  }
+  private drawCutin(ctx: CanvasRenderingContext2D, now: number) {
+    const ci = this.cutin!; const dur = ci.until - ci.start; const t = (now - ci.start) / dur;
+    const ease = (x: number) => 1 - Math.pow(1 - x, 3);
+    const bandIn = ease(Math.min(1, t / 0.18)), fade = t > 0.82 ? 1 - (t - 0.82) / 0.18 : 1;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = fade;
+    // 黒帯（斜め）
+    const h = 64 * bandIn, cy = 112;
+    ctx.fillStyle = ci.kind === 'limit' ? '#000c' : '#102a' ; ctx.beginPath(); ctx.moveTo(0, cy - h / 2 + 6); ctx.lineTo(256, cy - h / 2 - 6); ctx.lineTo(256, cy + h / 2 - 6); ctx.lineTo(0, cy + h / 2 + 6); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = ci.kind === 'limit' ? '#ffcf5a' : '#9ef'; ctx.lineWidth = 1; ctx.stroke();
+    // 流れる光の筋
+    ctx.globalAlpha = fade * 0.5; ctx.fillStyle = ci.kind === 'limit' ? '#ffcf5a' : '#9ef';
+    for (let i = 0; i < 6; i++) { const x = ((t * 400 + i * 50) % 300) - 40; ctx.fillRect(x, cy - h / 2 + 8 + i * 9, 26 - i * 3, 1); }
+    ctx.globalAlpha = fade;
+    // 顔（左からスライド）
+    const face = ci.face ? faceSprite(ci.face) : null;
+    const fx = -56 + ease(Math.min(1, t / 0.3)) * 70;
+    if (face && h > 40) { ctx.drawImage(face, Math.round(fx), cy - 24, 48, 48); ctx.strokeStyle = '#fff'; ctx.strokeRect(Math.round(fx) + 0.5, cy - 24 + 0.5, 47, 47); }
+    // 技名（右からスライド、縁取り）
+    const tx = 256 + 80 - ease(Math.min(1, t / 0.3)) * 170;
+    ctx.textAlign = 'left'; ctx.font = 'bold 16px monospace'; ctx.lineWidth = 4; ctx.strokeStyle = '#000'; ctx.lineJoin = 'round';
+    ctx.strokeText(ci.name, tx, cy + 8); ctx.fillStyle = ci.kind === 'limit' ? '#ffcf5a' : '#cff'; ctx.fillText(ci.name, tx, cy + 8);
+    ctx.font = '9px monospace'; ctx.strokeText(ci.sub, tx, cy - 10); ctx.fillStyle = '#fff'; ctx.fillText(ci.sub, tx, cy - 10);
+    ctx.restore(); ctx.textAlign = 'center'; ctx.font = '9px monospace';
   }
   private whiteOut(sp: CanvasImageSource, x: number, y: number, w: number, h: number) {
     const ctx = this.ctx; ctx.save(); ctx.globalAlpha = 0.85;
@@ -244,6 +271,7 @@ export class BattleView {
       ctx.strokeText(f.text, p.x, yy); ctx.fillStyle = f.color; ctx.fillText(f.text, p.x, yy);
       ctx.font = '9px monospace';
     }
+    if (this.cutin && now < this.cutin.until) this.drawCutin(ctx, now);
     if (b.result === 'won') {
       if (!this.victoryAt) { this.victoryAt = now; SFX.victory(); }
       const a = Math.min(1, (now - this.victoryAt) / 400);

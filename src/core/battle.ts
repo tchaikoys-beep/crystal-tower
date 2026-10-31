@@ -11,7 +11,7 @@ import { ITEMS } from '../data/items';
 import { areaElement } from '../data/monsters';
 
 export interface LogEntry { text: string; kind: 'info' | 'dmg' | 'heal' | 'bad' | 'good' | 'law' | 'sys' }
-export interface Fx { type: 'hit' | 'heal' | 'miss' | 'status' | 'act' | 'capture' | 'limit'; uid: string; amount?: number; text?: string; crit?: boolean; element?: Element; phys?: boolean }
+export interface Fx { type: 'hit' | 'heal' | 'miss' | 'status' | 'act' | 'capture' | 'limit' | 'summon'; uid: string; amount?: number; text?: string; crit?: boolean; element?: Element; phys?: boolean }
 export interface BattleOptions {
   floor: number;
   law: LawDef | null;
@@ -154,6 +154,7 @@ export class Battle {
     }
     if (skill.effect !== 'defend' && skill.effect !== 'flee') this.fx.push({ type: 'act', uid: c.uid, text: skill.kind === 'spell' || skill.effect === 'magic' || skill.effect === 'heal' ? 'cast' : 'attack' });
     if (skill.kind === 'limit') { c.limit = 0; this.say(`${c.name}のリミット技「${skill.name}」！`, 'good'); this.fx.push({ type: 'limit', uid: c.uid, text: skill.name }); }
+    if (skill.category === 'summon' && c.kind === 'hero') this.fx.push({ type: 'summon', uid: c.uid, text: skill.name.replace('召喚：', '') });
     const targets = this.resolveTargets(c, skill, action.targetUid);
     if (c.kind === 'hero') { if (skill.kind === 'spell') this.uses.push({ uid: c.uid, kind: 'spell', key: skill.id }); else if (skill.effect === 'phys') this.uses.push({ uid: c.uid, kind: 'weapon', key: c.weaponType ?? 'fist' }); }
     if (skill.effect !== 'defend' && skill.effect !== 'flee' && skill.effect !== 'focus') this.say(`${c.name}の${skill.name}`);
