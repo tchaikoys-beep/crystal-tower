@@ -30,6 +30,7 @@ export class BattleView {
   particles: Particle[] = [];
   shakeUntil = 0; shakeMag = 0;
   victoryAt = 0;
+  enemyActs: Record<string, { t: number; cast: boolean }> = {};
   cutin: { until: number; start: number; name: string; sub: string; face: string | null; kind: 'limit' | 'summon' } | null = null;
   last = 0;
   raf = 0;
@@ -99,7 +100,7 @@ export class BattleView {
         if (f.crit) { this.shakeUntil = now + 220; this.shakeMag = 4; SFX.crit(); } else if (f.phys) SFX.hit(); else SFX.magic(f.element);
         const tgt = b.enemies.find(e => e.uid === f.uid); if (tgt?.boss && (f.amount ?? 0) > tgt.stats.hp * 0.08) { this.shakeUntil = now + 200; this.shakeMag = Math.max(this.shakeMag, 3); }
       }
-      if (f.type === 'act') this.poses[f.uid] = { pose: (f.text as HeroPose) ?? 'attack', until: now + 600 };
+      if (f.type === 'act') { this.poses[f.uid] = { pose: (f.text as HeroPose) ?? 'attack', until: now + 600 }; if (b.enemies.some(e => e.uid === f.uid)) { this.enemyActs[f.uid] = { t: now, cast: f.text === 'cast' }; if (f.text === 'cast' && p) this.sparkle(p.x, p.y, '#9cf', now, 10); } }
       if (f.type === 'heal') { this.floats.push({ uid: f.uid, text: String(f.amount), color: '#7cf3a5', t: now }); if (p) this.sparkle(p.x, p.y, '#9f9', now); SFX.heal(); }
       if (f.type === 'miss') { this.floats.push({ uid: f.uid, text: f.text ?? 'miss', color: '#9fb0e0', t: now }); SFX.miss(); }
       if (f.type === 'status') { this.floats.push({ uid: f.uid, text: f.text ?? '', color: '#ff8ae0', t: now }); if (p) this.sparkle(p.x, p.y, '#f8e', now); SFX.status(); }
@@ -209,10 +210,14 @@ export class BattleView {
     const enemies = b.enemies;
     enemies.forEach((e, i) => {
       if (e.captured) return;
-      const p = this.pos(e, i, enemies.length);
+      const p0 = this.pos(e, i, enemies.length);
+      const ea = this.enemyActs[e.uid]; const prog = ea ? (now - ea.t) / 360 : 2;
+      const lunge = prog < 1 && !ea!.cast ? Math.sin(prog * Math.PI) * 14 : 0;
+      const p = { x: p0.x + lunge, y: p0.y - (prog < 1 && !ea!.cast ? Math.sin(prog * Math.PI) * 4 : 0) };
       const size = e.boss ? 44 : 26;
       const flash = this.flashes[e.uid] && now - this.flashes[e.uid] < 150;
       if (isAlive(e)) {
+        if (ea && ea.cast && prog < 1.5) { ctx.save(); ctx.globalAlpha = 0.6 * (1 - prog / 1.5); ctx.strokeStyle = '#9cf'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(p.x, p.y + (e.boss ? 44 : 26) / 2 + 6, 18 + prog * 10, 5 + prog * 3, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
         const sp = enemySprite(e.spriteId, e.boss);
         let half = size / 2;
         if (sp) {

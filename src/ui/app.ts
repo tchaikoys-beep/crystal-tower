@@ -1,6 +1,8 @@
 // 画面遷移とメニュー類
 import { h, btn, bar, toast, selectEl, type Child } from './dom';
 import { SFX, installUiSounds, setSfxEnabled } from './sfx';
+import { playBgm, setBgmEnabled } from './bgm';
+import { TitleCrystal } from './title';
 import { BattleView } from './battleView';
 import { synthScreen } from './synth';
 import { masteryLevel, masteryNext, MAX_MASTERY } from '../core/formulas';
@@ -85,6 +87,11 @@ export class App {
       case 'synth': this.root.append(synthScreen({ s: this.s!, itemLabel: it => this.itemLabel(it), render: () => this.render(), back: () => this.go('hub'), shell: o => this.shell(o) })); break;
     }
     const sc = this.root.querySelector('.content'); if (sc) sc.scrollTop = this.screen === 'battle' ? 0 : sc.scrollHeight;
+    // BGM：画面ごとに切替（ブラウザの制限で最初の操作後から鳴る）
+    const st = this.s?.settings; setBgmEnabled(!st || st.bgm !== false);
+    if (this.screen === 'title') playBgm('title');
+    else if (this.screen === 'battle') { const ev = this.battleEvent; playBgm(ev?.type === 'guardian' && (ev.boss === 'area' || ev.boss === 'mid' || ev.superBoss) ? 'boss' : this.s?.run.underground ? 'chaos' : 'battle'); }
+    else playBgm(this.s?.run.underground && this.screen === 'tower' ? 'chaos' : 'hub');
   }
   // ---------- タイトル
   title(): HTMLElement {
@@ -92,7 +99,7 @@ export class App {
     if (saved) { try { (saved as any).run.underground ??= false; } catch { /* noop */ } }
     const pick = (id: string) => { this.s = G.newGame(id); toast(`${HEROES[id].name}で冒険を始める`); this.go('hub'); };
     return this.shell({ title: 'クリスタルタワー', actions: saved ? [btn(`つづきから（${saved.run.floor}階・転生${saved.rebirths}回）`, () => { this.s = saved; this.go(saved.run.floor === 1 && saved.run.eventIndex === 0 ? 'hub' : 'tower'); }, 'primary')] : [], content: [
-      h('div', { class: 'win center' }, h('h1', {}, 'クリスタルタワー'), h('div', { class: 'dim' }, 'v1.6 ／ 片手で遊ぶ無限塔RPG')),
+      h('div', { class: 'win center title-win' }, new TitleCrystal().el, h('h1', { class: 'logo' }, 'クリスタルタワー'), h('div', { class: 'dim' }, 'v2.0 ／ 片手で遊ぶ無限塔RPG ／ 2000階')),
       h('div', { class: 'win' }, h('h2', {}, 'セーブデータ読み込み'), this.importBox()),
       h('div', { class: 'win push' }, h('h2', {}, 'はじめから：英雄を選ぶ'),
         h('div', { class: 'list' }, ...['bartz', 'terra', 'cloud'].map(id => {
@@ -616,7 +623,7 @@ export class App {
         h('div', { class: 'dim', style: 'font-size:12px' }, '遭遇：' + s.codex.monsters.map(m => MONSTERS[m]?.name ?? m).join('、'))),
       h('div', { class: 'win' }, h('h2', {}, 'セーブ書き出し'), h('div', { class: 'dim', style: 'font-size:12px' }, '端末を跨ぐときはこの文字列をコピーして、タイトル画面で読み込む。'), ta, btn('コピー', () => { navigator.clipboard?.writeText(ta.value).then(() => toast('コピーした')); }, 'small')),
       h('div', { class: 'win' }, h('h2', {}, '設定'), h('div', { class: 'row' }, h('span', { class: 'dim' }, '操作する手：'), btn('右手（ボタンは右寄せ）', () => { s.settings.hand = 'right'; this.render(); }, 'small' + (s.settings.hand === 'right' ? ' sel' : '')), btn('左手', () => { s.settings.hand = 'left'; this.render(); }, 'small' + (s.settings.hand === 'left' ? ' sel' : ''))),
-        h('div', { class: 'row', style: 'margin-top:6px' }, h('span', { class: 'dim' }, '効果音：'), btn(s.settings.sfx !== false ? 'ON' : 'OFF', () => { s.settings.sfx = !(s.settings.sfx !== false); setSfxEnabled(s.settings.sfx); this.render(); }, 'small' + (s.settings.sfx !== false ? ' sel' : '')), h('span', { class: 'dim', style: 'font-size:11px' }, 'チップチューン風の合成音。PCはEnter＝決定、Esc＝戻る、1〜9＝ドックのボタン'))),
+        h('div', { class: 'row', style: 'margin-top:6px' }, h('span', { class: 'dim' }, '効果音：'), btn(s.settings.sfx !== false ? 'ON' : 'OFF', () => { s.settings.sfx = !(s.settings.sfx !== false); setSfxEnabled(s.settings.sfx); this.render(); }, 'small' + (s.settings.sfx !== false ? ' sel' : '')), h('span', { class: 'dim' }, '　BGM：'), btn(s.settings.bgm !== false ? 'ON' : 'OFF', () => { s.settings.bgm = !(s.settings.bgm !== false); setBgmEnabled(s.settings.bgm); this.render(); }, 'small' + (s.settings.bgm !== false ? ' sel' : '')), h('span', { class: 'dim', style: 'font-size:11px' }, '合成音。PCはEnter＝決定、Esc＝戻る、1〜9＝ドックのボタン'))),
       h('div', { class: 'win' }, btn('データを消して最初から', () => { if (confirm('本当に消す？')) { clear(); this.s = null; this.go('title'); } }, 'small'))] });
   }
 }

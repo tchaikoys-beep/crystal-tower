@@ -92,6 +92,11 @@ canvas { width:100%; max-height:40dvh; object-fit:contain; display:block; image-
 .log div { white-space:pre-wrap; }
 .cmds > button { min-height:50px; }
 
+/* ===== タイトル ===== */
+.title-crystal { width:100%; max-width:320px; display:block; margin:0 auto 4px; image-rendering:auto; background:transparent; border:none; }
+.title-win { background:linear-gradient(180deg,#0b1a44,#0a1a3a); }
+h1.logo { font-size:26px; letter-spacing:2px; color:#ffe9a0; text-shadow:0 0 6px #ffcf5a88, 0 2px 0 #6a4a00, 0 0 18px #4af8; animation: logoglow 2.4s ease-in-out infinite alternate; }
+@keyframes logoglow { from { text-shadow:0 0 6px #ffcf5a66, 0 2px 0 #6a4a00, 0 0 12px #4af6; } to { text-shadow:0 0 14px #ffcf5acc, 0 2px 0 #6a4a00, 0 0 28px #4afc; } }
 /* ===== 演出：画面フェード、FF風の枠と選択カーソル ===== */
 .shell { animation: fadein .18s ease-out; }
 @keyframes fadein { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
