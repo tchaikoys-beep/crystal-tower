@@ -94,7 +94,7 @@ export function partyCombatants(s: GameState): Combatant[] {
 export function maxReserve(s: GameState): number { return 4 + boardValue(s, 'reserve'); }
 export function maxMonsterSlots(s: GameState): number { return 2 + boardValue(s, 'monster_slots'); }
 export const MAX_HERO_SLOTS = 4;
-export function maxRanch(s: GameState): number { return 20 + boardValue(s, 'ranch'); }
+export function maxRanch(s: GameState): number { return 500 + boardValue(s, 'ranch'); }  // 牧場はストック。前線＋控えが実質の携行枠
 export function maxStorage(s: GameState): number { return 200 + boardValue(s, 'storage'); }
 export function abilitySlots(s: GameState): number { return 2 + boardValue(s, 'ability_slots'); }
 export function cmdSlots(s: GameState): number { return 2 + boardValue(s, 'cmd_slots'); }

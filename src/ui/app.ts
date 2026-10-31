@@ -520,7 +520,23 @@ export class App {
           h('tr', {}, h('th', {}), h('th', { style: 'font-size:12px' }, monsterEl(a.id, 28), ca.name), h('th', { style: 'font-size:12px' }, monsterEl(b.id, 28), cb.name)),
           ...rowsC.map(([k, va, vb, num]) => h('tr', { style: 'border-top:1px solid #2a3f8a' }, h('td', { class: 'dim', style: 'padding:2px 6px;font-size:12px;white-space:nowrap' }, k), cell(va, vb, num), cell(vb, va, num)))));
     })();
-    const rows = s.monsters.map(m => {
+    const rs = ((this as any)._ranch ??= { sort: 'new', role: '', grade: '', page: 0 }) as { sort: string; role: string; grade: string; page: number };
+    const ivSum = (m: typeof s.monsters[number]) => STAT_KEYS.reduce((a, k) => a + m.iv[k], 0);
+    const gradeRank: Record<string, number> = { plus_rare: 3, rare: 2, plus: 1, normal: 0 };
+    let list = s.monsters.filter(m => (!rs.role || MONSTERS[m.id].role === rs.role) && (!rs.grade || (rs.grade === 'any' ? m.grade !== 'normal' : m.grade === rs.grade)));
+    const inParty = (m: typeof s.monsters[number]) => s.party.includes('m:' + m.uid) || s.reserve.includes('m:' + m.uid);
+    list = [...list].sort((a, b) => (inParty(b) ? 1 : 0) - (inParty(a) ? 1 : 0) || (rs.sort === 'lv' ? b.level - a.level : rs.sort === 'iv' ? ivSum(b) - ivSum(a) : rs.sort === 'grade' ? gradeRank[b.grade] - gradeRank[a.grade] || ivSum(b) - ivSum(a) : rs.sort === 'name' ? MONSTERS[a.id].name.localeCompare(MONSTERS[b.id].name, 'ja') : 0));
+    const PAGE = 30; const pages = Math.max(1, Math.ceil(list.length / PAGE)); rs.page = Math.min(rs.page, pages - 1);
+    const pageList = list.slice(rs.page * PAGE, rs.page * PAGE + PAGE);
+    const filterBar = h('div', { class: 'win' }, h('div', { class: 'row', style: 'gap:4px' }, h('span', { class: 'dim', style: 'font-size:11px' }, '並び：'),
+      ...[['new', '新着'], ['lv', 'Lv'], ['iv', '個体値'], ['grade', '等級'], ['name', '名前']].map(([k, l]) => btn(l, () => { rs.sort = k; rs.page = 0; this.render(); }, 'small' + (rs.sort === k ? ' sel' : '')))),
+      h('div', { class: 'row', style: 'gap:4px;margin-top:4px' }, h('span', { class: 'dim', style: 'font-size:11px' }, '絞込：'),
+        btn('全部', () => { rs.role = ''; rs.grade = ''; rs.page = 0; this.render(); }, 'small' + (!rs.role && !rs.grade ? ' sel' : '')),
+        ...[['attacker', '攻'], ['blocker', '盾'], ['healer', '癒'], ['jammer', '妨'], ['support', '援']].map(([k, l]) => btn(l, () => { rs.role = rs.role === k ? '' : k; rs.page = 0; this.render(); }, 'small' + (rs.role === k ? ' sel' : ''))),
+        btn('＋/●のみ', () => { rs.grade = rs.grade === 'any' ? '' : 'any'; rs.page = 0; this.render(); }, 'small' + (rs.grade === 'any' ? ' sel' : ''))),
+      h('div', { class: 'dim', style: 'font-size:11px;margin-top:4px' }, `${list.length}体${pages > 1 ? `　ページ ${rs.page + 1}/${pages}` : ''}（前線・控えは常に先頭）`));
+    const pager = pages > 1 ? h('div', { class: 'row', style: 'justify-content:flex-end;gap:4px' }, btn('前へ', () => { rs.page = Math.max(0, rs.page - 1); this.render(); }, 'small', rs.page === 0), btn('次へ', () => { rs.page = Math.min(pages - 1, rs.page + 1); this.render(); }, 'small', rs.page >= pages - 1)) : null;
+    const rows = pageList.map(m => {
       const c = buildAlly(s, m);
       const where = s.party.includes('m:' + m.uid) ? '前線' : s.reserve.includes('m:' + m.uid) ? '控え' : '牧場';
       return h('div', { class: 'item', style: 'flex-wrap:wrap' }, monsterEl(m.id, 40),
@@ -558,8 +574,9 @@ export class App {
       content: [
         movesSheet,
         compareBox,
-        h('div', { class: 'win' }, h('div', { class: 'dim', style: 'font-size:12px' }, `編成はメニューの「編成」から。絆は前線で戦うと上がり、転生しても残る。等級：＋強個体（5%出現・守護者は確定）、●レア。守護者を捕まえると＋確定。融合（A＋B→A。Bの特性1つと絆の半分を継承、特性は4つまで）は${s.rebirths >= 5 ? '解放済み' : '転生5回で解放'}。`)),
-        h('div', { class: 'win' }, h('div', { class: 'list' }, ...(rows.length ? rows : [h('div', { class: 'dim' }, 'まだ仲間がいない。魔獣使い（20階で解放）の「とらえる」か「魔石のケージ」で捕まえる。')]))),
+        h('div', { class: 'win' }, h('div', { class: 'dim', style: 'font-size:12px' }, `牧場はストック置き場（${G.maxRanch(s)}体まで）。戦闘に連れて行けるのは前線＋控え。編成はメニューの「編成」から。絆は前線で戦うと上がり、転生しても残る。等級：＋強個体（5%出現・守護者は確定）、●レア。守護者を捕まえると＋確定。融合（A＋B→A。Bの特性1つと絆の半分を継承、特性は4つまで）は${s.rebirths >= 5 ? '解放済み' : '転生5回で解放'}。`)),
+        filterBar,
+        h('div', { class: 'win' }, h('div', { class: 'list' }, ...(rows.length ? rows : [h('div', { class: 'dim' }, s.monsters.length ? '条件に合うモンスターがいない' : 'まだ仲間がいない。魔獣使い（20階で解放）の「とらえる」か「魔石のケージ」で捕まえる。')])), pager),
       ] });
   }
 

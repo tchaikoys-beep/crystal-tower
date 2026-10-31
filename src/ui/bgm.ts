@@ -56,18 +56,34 @@ function schedule() {
     if (song.drums && dT === tNext) { const k = song.drums[di % song.drums.length]; if (k !== '.') drum(k, dT); dT += beat / 2; di++; }
   }
 }
+// 音声ファイルがあればそれを優先（public/bgm/<name>.mp3 または .ogg）。なければ合成曲
+const fileCache: Record<string, HTMLAudioElement | null | 'checking'> = {};
+let fileAudio: HTMLAudioElement | null = null;
+function tryFile(name: string): HTMLAudioElement | null | 'checking' {
+  if (fileCache[name] !== undefined) return fileCache[name];
+  fileCache[name] = 'checking';
+  for (const ext of ['mp3', 'ogg']) {
+    const a = new Audio(`./bgm/${name}.${ext}`); a.loop = true; a.volume = 0.35; a.preload = 'auto';
+    a.addEventListener('canplaythrough', () => { if (fileCache[name] === 'checking') { fileCache[name] = a; if (current === name && enabled) { stopSynth(); fileAudio = a; void a.play().catch(() => {}); } } }, { once: true });
+    a.addEventListener('error', () => { if (ext === 'ogg' && fileCache[name] === 'checking') fileCache[name] = null; }, { once: true });
+  }
+  return 'checking';
+}
+function stopSynth() { if (timer) { clearInterval(timer); timer = undefined; } if (master && ctx) { const g = master; const t = ctx.currentTime; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0.0001, t + 0.25); master = null; setTimeout(() => { try { g.disconnect(); } catch { /* noop */ } }, 400); } }
 export function playBgm(name: string | null) {
   if (name === current) return;
   stopBgm();
   if (!name || !enabled || !SONGS[name]) return;
+  const f = tryFile(name);
+  if (f && f !== 'checking') { current = name; fileAudio = f; f.currentTime = 0; void f.play().catch(() => {}); return; }
   const a = ac(); if (!a) return;
   current = name; mi = bi = di = 0; const t0 = a.currentTime + 0.05; mT = bT = dT = t0; nextTime = t0;
   if (master) { master.gain.cancelScheduledValues(a.currentTime); master.gain.setValueAtTime(0.0001, a.currentTime); master.gain.linearRampToValueAtTime(1, a.currentTime + 0.6); }
   schedule(); timer = window.setInterval(schedule, 150);
 }
 export function stopBgm() {
-  if (timer) { clearInterval(timer); timer = undefined; }
-  if (current && master && ctx) { const g = master; const t = ctx.currentTime; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0.0001, t + 0.25); const old = master; master = null; setTimeout(() => { try { old.disconnect(); } catch { /* noop */ } }, 400); }
+  stopSynth();
+  if (fileAudio) { const a = fileAudio; fileAudio = null; a.pause(); }
   current = null;
 }
 export function setBgmEnabled(on: boolean) { enabled = on; if (!on) stopBgm(); }

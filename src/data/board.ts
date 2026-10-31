@@ -15,7 +15,7 @@ export const BOARD: BoardNode[] = [
   { id: 'drop1', name: 'ドロップ率+5%', cat: '収集', effect: { tag: 'drop_pct', value: 0.05 }, cost: 40, max: 20, adj: ['rare1'], desc: 'ドロップ率+5%' },
   { id: 'rare1', name: 'レア率+5%', cat: '収集', effect: { tag: 'rare_pct', value: 0.05 }, cost: 60, max: 20, adj: ['capture1'], desc: '高レアリティの出現率+5%' },
   { id: 'capture1', name: '捕獲率+5%', cat: '収集', effect: { tag: 'capture_pct', value: 0.05 }, cost: 40, max: 20, adj: [], desc: '捕獲率+5%' },
-  { id: 'ranch1', name: '牧場+10', cat: '収集', effect: { tag: 'ranch', value: 10 }, cost: 30, max: 8, adj: [], desc: '魔獣牧場の収容+10' },
+  { id: 'ranch1', name: '牧場+100', cat: '収集', effect: { tag: 'ranch', value: 100 }, cost: 30, max: 8, adj: [], desc: '魔獣牧場の収容+100（基本500）' },
   { id: 'gambit1', name: '作戦行+1', cat: '戦闘', effect: { tag: 'gambit_rows', value: 1 }, cost: 50, max: 4, adj: ['abil1', 'reserve1', 'mslot'], desc: '作戦の行数+1' },
   { id: 'mslot', name: 'モンスター枠+1', cat: '戦闘', effect: { tag: 'monster_slots', value: 1 }, cost: 80, max: 2, adj: [], desc: '前線のモンスター枠+1（最大4）' },
   { id: 'abil1', name: 'サポート枠+1', cat: '戦闘', effect: { tag: 'ability_slots', value: 1 }, cost: 120, max: 1, adj: ['cmd1'], desc: 'サポートアビリティの装備枠を3に' },

@@ -1,6 +1,7 @@
 // 戦闘画面：上半分キャンバス（四角と文字）、下半分コマンド
 import { h, btn, bar } from './dom';
 import { SFX } from './sfx';
+import { stopBgm } from './bgm';
 import type { Element } from '../core/types';
 interface Particle { x: number; y: number; vx: number; vy: number; t0: number; life: number; color: string; size: number; kind: 'dot' | 'ring' | 'slash' | 'bolt' | 'spark' | 'ray' }
 import type { Battle, Action } from '../core/battle';
@@ -278,10 +279,11 @@ export class BattleView {
     }
     if (this.cutin && now < this.cutin.until) this.drawCutin(ctx, now);
     if (b.result === 'won') {
-      if (!this.victoryAt) { this.victoryAt = now; SFX.victory(); }
+      if (!this.victoryAt) { this.victoryAt = now; stopBgm(); SFX.victory(); }
       const a = Math.min(1, (now - this.victoryAt) / 400);
       ctx.globalAlpha = a; ctx.font = 'bold 22px monospace'; ctx.lineWidth = 4; ctx.strokeStyle = '#000'; ctx.strokeText('VICTORY', 128, 40 + (1 - a) * 10); ctx.fillStyle = '#ffcf5a'; ctx.fillText('VICTORY', 128, 40 + (1 - a) * 10); ctx.globalAlpha = 1; ctx.font = '9px monospace';
-    } else if (b.result === 'lost' && !this.victoryAt) { this.victoryAt = now; SFX.defeat(); }
+    } else if (b.result === 'lost' && !this.victoryAt) { this.victoryAt = now; stopBgm(); SFX.defeat(); }
+    else if (b.result === 'fled' && !this.victoryAt) { this.victoryAt = now; stopBgm(); SFX.flee(); }
     if (b.pending && !this.auto) { ctx.fillStyle = '#ffcf5a'; ctx.textAlign = 'left'; ctx.fillText(`${b.pending.name} のコマンド`, 4, 10); ctx.textAlign = 'center'; }
   }
   renderParty() {
