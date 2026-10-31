@@ -1,10 +1,10 @@
 # 装備＋100：エリア1〜10に各10点。武器6（刀・斧・弓・鞭・拳・杖/ロッド/短剣/槍/剣を回す）＋防具・アクセ4。生成物 src/data/items2.ts
 import json, os
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-WP = {1: 20, 2: 32, 3: 42, 4: 55, 5: 68, 6: 82, 7: 95, 8: 106, 9: 120, 10: 138}      # 武器基礎攻撃
-BD = {1: 11, 2: 18, 3: 26, 4: 36, 5: 44, 6: 48, 7: 56, 8: 61, 9: 67, 10: 75}         # 体防御基礎
+WP = {1: 20, 2: 32, 3: 42, 4: 55, 5: 68, 6: 82, 7: 95, 8: 106, 9: 120, 10: 138, 11: 156, 12: 175, 13: 195, 14: 216, 15: 238, 16: 262}      # 武器基礎攻撃
+BD = {1: 11, 2: 18, 3: 26, 4: 36, 5: 44, 6: 48, 7: 56, 8: 61, 9: 67, 10: 75, 11: 83, 12: 91, 13: 100, 14: 109, 15: 118, 16: 128}         # 体防御基礎
 TM = {'gun': 1.0, 'book': 0.45, 'sword': 1.0, 'katana': 1.05, 'axe': 1.18, 'spear': 1.0, 'bow': 0.95, 'fist': 0.95, 'whip': 0.85, 'dagger': 0.8, 'staff': 0.4, 'rod': 0.35}
-PRICE = {1: 400, 2: 1200, 3: 2600, 4: 4200, 5: 6500, 6: 9000, 7: 12000, 8: 15000, 9: 19000, 10: 24000}
+PRICE = {1: 400, 2: 1200, 3: 2600, 4: 4200, 5: 6500, 6: 9000, 7: 12000, 8: 15000, 9: 19000, 10: 24000, 11: 30000, 12: 37000, 13: 45000, 14: 54000, 15: 64000, 16: 75000}
 # (area, id, 名前, kind, wtype|None, 倍率(武器)/防御倍率(防具), stats, element, learn(ability or skill), set)
 W = lambda a, i, n, wt, m=1.0, st=None, el=None, learn=None, s=None: (a, i, n, 'weapon', wt, m, st, el, learn, s)
 S = lambda a, i, n, m=1.0, st=None, learn=None, s=None: (a, i, n, 'shield', None, m, st, None, learn, s)
@@ -105,7 +105,40 @@ L += [
   B(10, 'omega_armor', 'オメガの鎧', 1.15, {'vit': 10}, ab('ribbon')), W(10, 'illusion_rod', '幻術師のロッド', 'rod', 1.05, {'mag': 28}, None, sk('prominence')),
   W(10, 'mog_sword', 'モグソード', 'sword', 1.05, {'luck': 10}, 'holy', sk('ultima_charge')), A(10, 'elemental_ring', '精霊の指輪', {'mag': 14, 'spr': 10}, sk('spirit_wrath')),
 ]
-assert len(L) == 152, len(L)
+# ---- 1001階以降の専用装備（エリア11〜16、各8点）
+L += [
+  # 11 ヴァナ・ディール（FF11）
+  W(11, 'kikoku', '鬼哭', 'katana', 1.05, {'spd': 10}, 'dark', ab('vamp5')), W(11, 'sphairai', 'スファライ', 'fist', 1.05, {'str': 12}, None, ab('multi10')),
+  W(11, 'annihilator', 'アニヒレーター', 'gun', 1.05, {'luck': 10}, None, sk('double_shot')), W(11, 'bravura', 'ブラビューラ', 'axe', 1.05, {'str': 14}, None, ab('desperate')),
+  S(11, 'koenig_shield', 'ケーニヒシールド', 0.85, {'vit': 10}, ab('auto_protect')), H(11, 'hecatomb_cap', 'ヘカトンキャップ', 0.6, {'str': 10}, ab('crit10')),
+  B(11, 'adaman_hauberk', 'アダマンホーバーク', 1.1, {'vit': 12}, ab('hp30')), A(11, 'rajas_ring', 'ラージャスリング', {'str': 12, 'luck': 12}, ab('first_strike')),
+  # 12 イヴァリース（FF12）
+  W(12, 'tournesol', 'トゥルヌソル', 'sword', 1.1, {'str': 12}, None, ab('two_handed')), W(12, 'zodiac_spear', 'ゾディアックスピア', 'spear', 1.15, None, None, sk('holy_dive')),
+  W(12, 'masamune12', 'マサムネ（FF12）', 'katana', 1.1, {'spd': 12}, None, ab('counter')), W(12, 'fomalhaut', 'フォーマルハウト', 'gun', 1.1, None, None, ab('crit10')),
+  H(12, 'grand_helm', 'グランドヘルム', 0.65, {'vit': 10}, ab('res_paralyze')), S(12, 'ensanguined_shield', '血塗られた盾', 1.0, {'str': 10}, ab('desperate')),
+  B(12, 'rubber_suit', 'ラバースーツ', 0.95, {'spd': 10}, ab('res_thunder')), A(12, 'germinas_boots', 'ジェルミナスブーツ', {'spd': 16}, ab('spd10')),
+  # 13 コクーン（FF13）
+  W(13, 'omega_weapon13', 'オメガウェポン', 'sword', 1.1, {'str': 14, 'mag': 14}, None, ab('limit_up')), W(13, 'kain_lance', 'カインの槍', 'spear', 1.1, {'spd': 10}, None, sk('wyvern_dive')),
+  W(13, 'punisher13', 'パニッシャー', 'gun', 1.1, None, None, sk('ultima_shot')), W(13, 'total_eclipses', 'トータルエクリプス', 'axe', 1.1, {'hp': 100}, None, ab('hp30')),
+  S(13, 'imperial_armguard', 'インペリアルアームガード', 0.85, {'spr': 10}, ab('magic_barrier')), H(13, 'tetradic_crown', 'テトラクラウン', 0.6, {'spr': 12}, ab('res_fire')),
+  A(13, 'wurtzite_bangle', 'ウルツァイトバングル', {'hp': 300, 'vit': 10}, ab('hp30')), A(13, 'genji_glove13', '源氏の小手（FF13）', {'str': 14}, ab('multi10'), 'genji'),
+  # 14 エオルゼア（FF14）
+  W(14, 'curtana', 'クルタナ', 'sword', 1.1, {'vit': 12}, 'holy', ab('cover')), W(14, 'gae_bolg', 'ゲイボルグ', 'spear', 1.1, {'str': 14}, None, sk('dragon_heart')),
+  W(14, 'yoshimitsu', 'ヨシミツ', 'katana', 1.1, {'spd': 14}, None, sk('issen')), W(14, 'stardust_rod', 'スターダストロッド', 'rod', 1.1, {'mag': 36}, None, sk('meteorite')),
+  W(14, 'omnilex', 'オムニレクス', 'book', 1.1, {'mag': 32, 'spr': 22}, None, sk('forbidden_chapter')), S(14, 'holy_shield14', 'ホーリーシールド', 0.9, {'spr': 12}, ab('res_dark')),
+  B(14, 'allagan_armor', 'アラグの鎧', 1.1, {'str': 10, 'vit': 10}, ab('auto_shell')), A(14, 'allagan_tomestone', 'アラグの石碑', {'mag': 10, 'spr': 10}, ab('exp_up')),
+  # 15 ルシス（FF15）
+  W(15, 'ultima_blade15', 'アルティマブレード', 'sword', 1.15, {'str': 16}, None, sk('climhazzard')), W(15, 'zwill_crossblades', 'ツヴィルクロスブレード', 'dagger', 1.15, {'spd': 16}, None, sk('phantom_steal')),
+  W(15, 'flayer', 'フレイヤー', 'spear', 1.1, None, None, sk('spear_thrust')), W(15, 'cerberus_rifle', 'ケルベロス', 'gun', 1.15, {'luck': 12}, None, sk('death_arrow')),
+  B(15, 'kingly_raiment', '王の衣', 1.0, {'str': 12, 'mag': 12, 'spd': 8}, ab('auto_haste')), B(15, 'magitek_suit', '魔導スーツ', 1.15, {'vit': 14}, ab('res_thunder')),
+  A(15, 'oracle_coin', '神凪の昇天コイン', {'luck': 20}, ab('rare_up')), A(15, 'safety_bit', 'セーフティビット', {'spr': 12}, ab('ribbon')),
+  # 16 ヴァリスゼア（FF16）
+  W(16, 'gotterdammerung', 'ゴットデメルング', 'sword', 1.2, {'str': 20}, None, ab('limit_up')), W(16, 'invictus', 'インヴィクタス', 'sword', 1.1, {'str': 14, 'vit': 10}, 'fire', ab('desperate')),
+  W(16, 'zantetsuken16', 'ザンテツケン', 'katana', 1.2, {'spd': 14}, 'dark', sk('zantetsuken')), W(16, 'titan_gauntlets', 'タイタンのガントレット', 'fist', 1.15, {'str': 18, 'vit': 10}, 'earth', sk('titan_smash')),
+  B(16, 'dominant_cloak', 'ドミナントの外套', 1.05, {'str': 10, 'mag': 16}, ab('half_mp')), H(16, 'crown_of_ultima', 'アルティマの冠', 0.7, {'mag': 20, 'spr': 20}, ab('doublecast')),
+  A(16, 'ouroboros_belt', 'ウロボロスベルト', {'hp': 400, 'vit': 12}, ab('auto_regen')), A(16, 'genji_earrings16', '源氏の耳飾り', {'spd': 12}, ab('eva10'), 'genji'),
+]
+assert len(L) == 200, len(L)
 out = []
 for (a, i, n, kind, wt, m, st, el, learn, s) in L:
     it = {'id': i, 'name': n, 'kind': kind, 'price': PRICE[a], 'area': a}

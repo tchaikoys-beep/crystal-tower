@@ -2306,5 +2306,763 @@ export const ITEMS2: BaseItem[] = [
 "skill": "spirit_wrath",
 "ap": 330
 }
+},
+{
+"id": "kikoku",
+"name": "鬼哭",
+"kind": "weapon",
+"price": 30000,
+"area": 11,
+"wtype": "katana",
+"power": 172,
+"stats": {
+"spd": 10
+},
+"element": "dark",
+"learn": {
+"ability": "vamp5",
+"ap": 355
+}
+},
+{
+"id": "sphairai",
+"name": "スファライ",
+"kind": "weapon",
+"price": 30000,
+"area": 11,
+"wtype": "fist",
+"power": 156,
+"stats": {
+"str": 12
+},
+"learn": {
+"ability": "multi10",
+"ap": 355
+}
+},
+{
+"id": "annihilator",
+"name": "アニヒレーター",
+"kind": "weapon",
+"price": 30000,
+"area": 11,
+"wtype": "gun",
+"power": 164,
+"stats": {
+"luck": 10
+},
+"learn": {
+"skill": "double_shot",
+"ap": 355
+}
+},
+{
+"id": "bravura",
+"name": "ブラビューラ",
+"kind": "weapon",
+"price": 30000,
+"area": 11,
+"wtype": "axe",
+"power": 193,
+"stats": {
+"str": 14
+},
+"learn": {
+"ability": "desperate",
+"ap": 355
+}
+},
+{
+"id": "koenig_shield",
+"name": "ケーニヒシールド",
+"kind": "shield",
+"price": 30000,
+"area": 11,
+"def": 71,
+"mdef": 28,
+"stats": {
+"vit": 10
+},
+"learn": {
+"ability": "auto_protect",
+"ap": 355
+}
+},
+{
+"id": "hecatomb_cap",
+"name": "ヘカトンキャップ",
+"kind": "head",
+"price": 30000,
+"area": 11,
+"def": 50,
+"mdef": 25,
+"stats": {
+"str": 10
+},
+"learn": {
+"ability": "crit10",
+"ap": 355
+}
+},
+{
+"id": "adaman_hauberk",
+"name": "アダマンホーバーク",
+"kind": "body",
+"price": 30000,
+"area": 11,
+"def": 91,
+"mdef": 27,
+"stats": {
+"vit": 12
+},
+"learn": {
+"ability": "hp30",
+"ap": 355
+}
+},
+{
+"id": "rajas_ring",
+"name": "ラージャスリング",
+"kind": "acc",
+"price": 30000,
+"area": 11,
+"stats": {
+"str": 12,
+"luck": 12
+},
+"learn": {
+"ability": "first_strike",
+"ap": 355
+}
+},
+{
+"id": "tournesol",
+"name": "トゥルヌソル",
+"kind": "weapon",
+"price": 37000,
+"area": 12,
+"wtype": "sword",
+"power": 193,
+"stats": {
+"str": 12
+},
+"learn": {
+"ability": "two_handed",
+"ap": 380
+}
+},
+{
+"id": "zodiac_spear",
+"name": "ゾディアックスピア",
+"kind": "weapon",
+"price": 37000,
+"area": 12,
+"wtype": "spear",
+"power": 201,
+"learn": {
+"skill": "holy_dive",
+"ap": 380
+}
+},
+{
+"id": "masamune12",
+"name": "マサムネ（FF12）",
+"kind": "weapon",
+"price": 37000,
+"area": 12,
+"wtype": "katana",
+"power": 202,
+"stats": {
+"spd": 12
+},
+"learn": {
+"ability": "counter",
+"ap": 380
+}
+},
+{
+"id": "fomalhaut",
+"name": "フォーマルハウト",
+"kind": "weapon",
+"price": 37000,
+"area": 12,
+"wtype": "gun",
+"power": 193,
+"learn": {
+"ability": "crit10",
+"ap": 380
+}
+},
+{
+"id": "grand_helm",
+"name": "グランドヘルム",
+"kind": "head",
+"price": 37000,
+"area": 12,
+"def": 59,
+"mdef": 30,
+"stats": {
+"vit": 10
+},
+"learn": {
+"ability": "res_paralyze",
+"ap": 380
+}
+},
+{
+"id": "ensanguined_shield",
+"name": "血塗られた盾",
+"kind": "shield",
+"price": 37000,
+"area": 12,
+"def": 91,
+"mdef": 36,
+"stats": {
+"str": 10
+},
+"learn": {
+"ability": "desperate",
+"ap": 380
+}
+},
+{
+"id": "rubber_suit",
+"name": "ラバースーツ",
+"kind": "body",
+"price": 37000,
+"area": 12,
+"def": 86,
+"mdef": 26,
+"stats": {
+"spd": 10
+},
+"learn": {
+"ability": "res_thunder",
+"ap": 380
+}
+},
+{
+"id": "germinas_boots",
+"name": "ジェルミナスブーツ",
+"kind": "acc",
+"price": 37000,
+"area": 12,
+"stats": {
+"spd": 16
+},
+"learn": {
+"ability": "spd10",
+"ap": 380
+}
+},
+{
+"id": "omega_weapon13",
+"name": "オメガウェポン",
+"kind": "weapon",
+"price": 45000,
+"area": 13,
+"wtype": "sword",
+"power": 215,
+"stats": {
+"str": 14,
+"mag": 14
+},
+"learn": {
+"ability": "limit_up",
+"ap": 405
+}
+},
+{
+"id": "kain_lance",
+"name": "カインの槍",
+"kind": "weapon",
+"price": 45000,
+"area": 13,
+"wtype": "spear",
+"power": 215,
+"stats": {
+"spd": 10
+},
+"learn": {
+"skill": "wyvern_dive",
+"ap": 405
+}
+},
+{
+"id": "punisher13",
+"name": "パニッシャー",
+"kind": "weapon",
+"price": 45000,
+"area": 13,
+"wtype": "gun",
+"power": 215,
+"learn": {
+"skill": "ultima_shot",
+"ap": 405
+}
+},
+{
+"id": "total_eclipses",
+"name": "トータルエクリプス",
+"kind": "weapon",
+"price": 45000,
+"area": 13,
+"wtype": "axe",
+"power": 253,
+"stats": {
+"hp": 100
+},
+"learn": {
+"ability": "hp30",
+"ap": 405
+}
+},
+{
+"id": "imperial_armguard",
+"name": "インペリアルアームガード",
+"kind": "shield",
+"price": 45000,
+"area": 13,
+"def": 85,
+"mdef": 34,
+"stats": {
+"spr": 10
+},
+"learn": {
+"ability": "magic_barrier",
+"ap": 405
+}
+},
+{
+"id": "tetradic_crown",
+"name": "テトラクラウン",
+"kind": "head",
+"price": 45000,
+"area": 13,
+"def": 60,
+"mdef": 30,
+"stats": {
+"spr": 12
+},
+"learn": {
+"ability": "res_fire",
+"ap": 405
+}
+},
+{
+"id": "wurtzite_bangle",
+"name": "ウルツァイトバングル",
+"kind": "acc",
+"price": 45000,
+"area": 13,
+"stats": {
+"hp": 300,
+"vit": 10
+},
+"learn": {
+"ability": "hp30",
+"ap": 405
+}
+},
+{
+"id": "genji_glove13",
+"name": "源氏の小手（FF13）",
+"kind": "acc",
+"price": 45000,
+"area": 13,
+"stats": {
+"str": 14
+},
+"learn": {
+"ability": "multi10",
+"ap": 405
+},
+"set": "genji"
+},
+{
+"id": "curtana",
+"name": "クルタナ",
+"kind": "weapon",
+"price": 54000,
+"area": 14,
+"wtype": "sword",
+"power": 238,
+"stats": {
+"vit": 12
+},
+"element": "holy",
+"learn": {
+"ability": "cover",
+"ap": 430
+}
+},
+{
+"id": "gae_bolg",
+"name": "ゲイボルグ",
+"kind": "weapon",
+"price": 54000,
+"area": 14,
+"wtype": "spear",
+"power": 238,
+"stats": {
+"str": 14
+},
+"learn": {
+"skill": "dragon_heart",
+"ap": 430
+}
+},
+{
+"id": "yoshimitsu",
+"name": "ヨシミツ",
+"kind": "weapon",
+"price": 54000,
+"area": 14,
+"wtype": "katana",
+"power": 249,
+"stats": {
+"spd": 14
+},
+"learn": {
+"skill": "issen",
+"ap": 430
+}
+},
+{
+"id": "stardust_rod",
+"name": "スターダストロッド",
+"kind": "weapon",
+"price": 54000,
+"area": 14,
+"wtype": "rod",
+"power": 83,
+"stats": {
+"mag": 36
+},
+"learn": {
+"skill": "meteorite",
+"ap": 430
+}
+},
+{
+"id": "omnilex",
+"name": "オムニレクス",
+"kind": "weapon",
+"price": 54000,
+"area": 14,
+"wtype": "book",
+"power": 107,
+"stats": {
+"mag": 32,
+"spr": 22
+},
+"learn": {
+"skill": "forbidden_chapter",
+"ap": 430
+}
+},
+{
+"id": "holy_shield14",
+"name": "ホーリーシールド",
+"kind": "shield",
+"price": 54000,
+"area": 14,
+"def": 98,
+"mdef": 39,
+"stats": {
+"spr": 12
+},
+"learn": {
+"ability": "res_dark",
+"ap": 430
+}
+},
+{
+"id": "allagan_armor",
+"name": "アラグの鎧",
+"kind": "body",
+"price": 54000,
+"area": 14,
+"def": 120,
+"mdef": 36,
+"stats": {
+"str": 10,
+"vit": 10
+},
+"learn": {
+"ability": "auto_shell",
+"ap": 430
+}
+},
+{
+"id": "allagan_tomestone",
+"name": "アラグの石碑",
+"kind": "acc",
+"price": 54000,
+"area": 14,
+"stats": {
+"mag": 10,
+"spr": 10
+},
+"learn": {
+"ability": "exp_up",
+"ap": 430
+}
+},
+{
+"id": "ultima_blade15",
+"name": "アルティマブレード",
+"kind": "weapon",
+"price": 64000,
+"area": 15,
+"wtype": "sword",
+"power": 274,
+"stats": {
+"str": 16
+},
+"learn": {
+"skill": "climhazzard",
+"ap": 455
+}
+},
+{
+"id": "zwill_crossblades",
+"name": "ツヴィルクロスブレード",
+"kind": "weapon",
+"price": 64000,
+"area": 15,
+"wtype": "dagger",
+"power": 219,
+"stats": {
+"spd": 16
+},
+"learn": {
+"skill": "phantom_steal",
+"ap": 455
+}
+},
+{
+"id": "flayer",
+"name": "フレイヤー",
+"kind": "weapon",
+"price": 64000,
+"area": 15,
+"wtype": "spear",
+"power": 262,
+"learn": {
+"skill": "spear_thrust",
+"ap": 455
+}
+},
+{
+"id": "cerberus_rifle",
+"name": "ケルベロス",
+"kind": "weapon",
+"price": 64000,
+"area": 15,
+"wtype": "gun",
+"power": 274,
+"stats": {
+"luck": 12
+},
+"learn": {
+"skill": "death_arrow",
+"ap": 455
+}
+},
+{
+"id": "kingly_raiment",
+"name": "王の衣",
+"kind": "body",
+"price": 64000,
+"area": 15,
+"def": 118,
+"mdef": 35,
+"stats": {
+"str": 12,
+"mag": 12,
+"spd": 8
+},
+"learn": {
+"ability": "auto_haste",
+"ap": 455
+}
+},
+{
+"id": "magitek_suit",
+"name": "魔導スーツ",
+"kind": "body",
+"price": 64000,
+"area": 15,
+"def": 136,
+"mdef": 41,
+"stats": {
+"vit": 14
+},
+"learn": {
+"ability": "res_thunder",
+"ap": 455
+}
+},
+{
+"id": "oracle_coin",
+"name": "神凪の昇天コイン",
+"kind": "acc",
+"price": 64000,
+"area": 15,
+"stats": {
+"luck": 20
+},
+"learn": {
+"ability": "rare_up",
+"ap": 455
+}
+},
+{
+"id": "safety_bit",
+"name": "セーフティビット",
+"kind": "acc",
+"price": 64000,
+"area": 15,
+"stats": {
+"spr": 12
+},
+"learn": {
+"ability": "ribbon",
+"ap": 455
+}
+},
+{
+"id": "gotterdammerung",
+"name": "ゴットデメルング",
+"kind": "weapon",
+"price": 75000,
+"area": 16,
+"wtype": "sword",
+"power": 314,
+"stats": {
+"str": 20
+},
+"learn": {
+"ability": "limit_up",
+"ap": 480
+}
+},
+{
+"id": "invictus",
+"name": "インヴィクタス",
+"kind": "weapon",
+"price": 75000,
+"area": 16,
+"wtype": "sword",
+"power": 288,
+"stats": {
+"str": 14,
+"vit": 10
+},
+"element": "fire",
+"learn": {
+"ability": "desperate",
+"ap": 480
+}
+},
+{
+"id": "zantetsuken16",
+"name": "ザンテツケン",
+"kind": "weapon",
+"price": 75000,
+"area": 16,
+"wtype": "katana",
+"power": 330,
+"stats": {
+"spd": 14
+},
+"element": "dark",
+"learn": {
+"skill": "zantetsuken",
+"ap": 480
+}
+},
+{
+"id": "titan_gauntlets",
+"name": "タイタンのガントレット",
+"kind": "weapon",
+"price": 75000,
+"area": 16,
+"wtype": "fist",
+"power": 286,
+"stats": {
+"str": 18,
+"vit": 10
+},
+"element": "earth",
+"learn": {
+"skill": "titan_smash",
+"ap": 480
+}
+},
+{
+"id": "dominant_cloak",
+"name": "ドミナントの外套",
+"kind": "body",
+"price": 75000,
+"area": 16,
+"def": 134,
+"mdef": 40,
+"stats": {
+"str": 10,
+"mag": 16
+},
+"learn": {
+"ability": "half_mp",
+"ap": 480
+}
+},
+{
+"id": "crown_of_ultima",
+"name": "アルティマの冠",
+"kind": "head",
+"price": 75000,
+"area": 16,
+"def": 90,
+"mdef": 45,
+"stats": {
+"mag": 20,
+"spr": 20
+},
+"learn": {
+"ability": "doublecast",
+"ap": 480
+}
+},
+{
+"id": "ouroboros_belt",
+"name": "ウロボロスベルト",
+"kind": "acc",
+"price": 75000,
+"area": 16,
+"stats": {
+"hp": 400,
+"vit": 12
+},
+"learn": {
+"ability": "auto_regen",
+"ap": 480
+}
+},
+{
+"id": "genji_earrings16",
+"name": "源氏の耳飾り",
+"kind": "acc",
+"price": 75000,
+"area": 16,
+"stats": {
+"spd": 12
+},
+"learn": {
+"ability": "eva10",
+"ap": 480
+},
+"set": "genji"
 }
 ] as BaseItem[];
