@@ -12,7 +12,7 @@ V = [
   ('wolf', 'warg', 'ワーグ', 30, 0.8, 'blind_dust', None, {'str': 1.15}),
   ('bomb', 'balloon', 'バルーン', 60, 1.1, 'self_destruct', {'fire': -1, 'wind': 2}, {'spd': 1.3}),
   ('skeleton', 'bone_knight', 'ボーンナイト', 210, 0.9, 'brave_slash_m', {'holy': 2, 'dark': -1}, {'str': 1.3, 'vit': 1.3}),
-  ('pudding', 'yellow_jelly', 'イエロージェリー', 300, 1.15, 'thunder_breath', {'thunder': -1, 'earth': 2}, {'mag': 1.3}),
+  ('pudding', 'yellow_jelly', 'ブルージェリー', 200, 1.1, 'thunder_breath', {'thunder': -1, 'earth': 2}, {'mag': 1.3}),
   ('sahagin', 'sahagin_chief', 'サハギンチーフ', 300, 0.95, 'aqua_breath', {'water': -1, 'thunder': 2}, {'str': 1.2}),
   ('zombie', 'ghoul', 'グール', 90, 0.85, 'curse', {'holy': 2, 'poison': 0}, {'spd': 1.4}),
   ('cactuar', 'gigantuar', 'ギガンタウアー', 25, 0.72, 'needles', None, {'hp': 2.5, 'str': 1.3}),

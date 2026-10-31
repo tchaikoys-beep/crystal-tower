@@ -118,6 +118,6 @@ export interface GameState {
   codex: { items: string[]; affixes: string[]; monsters: string[]; captured: Record<string, Partial<Record<'normal' | 'plus' | 'rare' | 'plus_rare', number>>> };
   stats: { battles: number; kills: number; captures: number; rebirthLog: { floor: number; tp: number }[] };
   uidCounter: number;
-  settings: { auto: boolean; speed: number; autoGambit: boolean; hand: 'right' | 'left' };
+  settings: { auto: boolean; speed: number; autoGambit: boolean; hand: 'right' | 'left'; sfx: boolean };
 }
 export const SAVE_VERSION = 1;

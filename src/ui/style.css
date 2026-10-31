@@ -92,5 +92,37 @@ canvas { width:100%; max-height:40dvh; object-fit:contain; display:block; image-
 .log div { white-space:pre-wrap; }
 .cmds > button { min-height:50px; }
 
-/* PC・横長：中央寄せのまま少し広げる（本格対応は後日） */
-@media (min-width: 900px) { #app { max-width:560px; } }
+/* ===== 演出：画面フェード、FF風の枠と選択カーソル ===== */
+.shell { animation: fadein .18s ease-out; }
+@keyframes fadein { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+.win { box-shadow: inset 0 0 0 2px #0a1a3a, inset 0 0 0 3px #6a7fc5; }
+button.sel::before { content:'▶'; font-size:10px; margin-right:4px; color:var(--accent); }
+.dock-tabs button.sel::before, .dock-tabs.chips button.sel::before { content:''; margin:0; }
+.member.active { box-shadow: 0 0 0 1px var(--accent), 0 0 8px #ffcf5a66; }
+.bar > i { transition: width .25s ease-out; }
+.toast { animation: toastin .15s ease-out; }
+@keyframes toastin { from { opacity:0; transform:translate(-50%, 6px); } to { opacity:1; transform:translate(-50%, 0); } }
+.sheet-box { animation: sheetin .18s ease-out; }
+@keyframes sheetin { from { transform:translateY(24px); opacity:.6; } to { transform:none; opacity:1; } }
+
+/* ===== PC・横長：内容を左、操作ドックを右のサイドパネルに ===== */
+@media (min-width: 900px) and (hover: hover) {
+  #app { max-width:1040px; }
+  .shell { flex-direction:row; }
+  .content { flex:1; min-width:0; border-right:1px solid #1c2f6e; }
+  .dock { width:360px; flex:none; border-top:none; justify-content:flex-end; padding:12px; gap:10px; }
+  .dock-row { flex-direction:column-reverse; align-items:stretch; }
+  .dock-actions { width:100%; margin-left:0; }
+  .dock-nav { flex-direction:row; flex-wrap:wrap; }
+  .dock-tabs { flex-wrap:wrap; justify-content:flex-start; }
+  .dock-tabs button { flex:1 1 30%; }
+  .sheet-box { max-width:720px; }
+  button:hover:not(:disabled) { filter:brightness(1.15); }
+  .item.tap:hover { background:#1a2d66; }
+  canvas { max-height:56vh; }
+  .battle .content { padding-right:0; }
+  .hdr { font-size:15px; padding:10px 12px 6px; }
+  .content > .spacer { display:none; }   /* PCは上詰め */
+  .content > .push { margin-top:0; }
+  .dock { justify-content:flex-start; padding-top:48px; }
+}

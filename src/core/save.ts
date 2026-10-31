@@ -19,9 +19,10 @@ function migrate(s: GameState): GameState {
   // 魔石制への移行：容量を超えるサポートは後ろから外す（migrate末尾で実施）
   const trimStones = () => { for (const h of Object.values(s.heroes)) { h.equipped = (h.equipped ?? []).filter(k => SUPPORTS[k]); while (stonesUsed(h) > abilityStones(s, h) && h.equipped.length) h.equipped.pop(); } };
   if (!s.version) s.version = SAVE_VERSION;
-  s.settings ??= { auto: true, speed: 2, autoGambit: true, hand: 'right' };
+  s.settings ??= { auto: true, speed: 2, autoGambit: true, hand: 'right', sfx: true };
   s.settings.autoGambit ??= true;
   s.settings.hand ??= 'right';
+  s.settings.sfx ??= true;
   s.reserve ??= [];
   s.missions ??= { offers: [], active: [], completed: 0 };
   s.maxDepthEver ??= 0; s.superBosses ??= {}; s.autoModes ??= {}; s.blueLearned ??= []; s.summons ??= [];

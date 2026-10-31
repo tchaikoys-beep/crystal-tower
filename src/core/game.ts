@@ -58,7 +58,7 @@ export function newGame(heroId: string, seed = Date.now() % 1000000): GameState 
     version: SAVE_VERSION, seed, rngState: seed, heroes: {}, party: [], reserve: [], monsters: [], inventory: [], bag: { potion: 5, phoenix_down: 1, magi_cage: 4 }, gil: 300,
     run: newRun(1), maxFloorEver: 1, maxDepthEver: 0, superBosses: {}, autoModes: {}, blueLearned: [], summons: [], rebirths: 0, tp: 0, board: { start: 1 }, blessing: null, trials: [],
     missions: { offers: [], active: [], completed: 0 },
-    codex: { items: [], affixes: [], monsters: [], captured: {} }, stats: { battles: 0, kills: 0, captures: 0, rebirthLog: [] }, uidCounter: 1, settings: { auto: true, speed: 2, autoGambit: true, hand: 'right' },
+    codex: { items: [], affixes: [], monsters: [], captured: {} }, stats: { battles: 0, kills: 0, captures: 0, rebirthLog: [] }, uidCounter: 1, settings: { auto: true, speed: 2, autoGambit: true, hand: 'right', sfx: true },
   };
   s.heroes[heroId] = createHero(heroId);
   s.party = ['h:' + heroId];

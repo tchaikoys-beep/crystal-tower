@@ -1,5 +1,8 @@
 // 戦闘画面：上半分キャンバス（四角と文字）、下半分コマンド
 import { h, btn, bar } from './dom';
+import { SFX } from './sfx';
+import type { Element } from '../core/types';
+interface Particle { x: number; y: number; vx: number; vy: number; t0: number; life: number; color: string; size: number; kind: 'dot' | 'ring' | 'slash' | 'bolt' | 'spark' | 'ray' }
 import type { Battle, Action } from '../core/battle';
 import type { Combatant, Command } from '../core/entity';
 import { isAlive } from '../core/entity';
@@ -24,6 +27,9 @@ export class BattleView {
   flashes: Record<string, number> = {};
   poses: Record<string, { pose: HeroPose; until: number }> = {};
   deaths: Record<string, number> = {};
+  particles: Particle[] = [];
+  shakeUntil = 0; shakeMag = 0;
+  victoryAt = 0;
   last = 0;
   raf = 0;
   logCount = 0;
@@ -81,15 +87,72 @@ export class BattleView {
     this.raf = requestAnimationFrame(this.loop);
   };
   consumeFx(now: number) {
-    for (const f of this.battle.fx) {
-      if (f.type === 'hit') { this.floats.push({ uid: f.uid, text: String(f.amount) + (f.crit ? '!' : ''), color: f.crit ? '#ffcf5a' : '#fff', t: now }); this.flashes[f.uid] = now; this.poses[f.uid] = { pose: 'hurt', until: now + 450 }; }
+    const b = this.battle;
+    const where = (uid: string) => { const idx = b.players.findIndex(x => x.uid === uid); const c = [...b.players, ...b.enemies].find(x => x.uid === uid); if (!c) return null; return idx >= 0 ? this.pos(c, idx, b.players.length) : this.pos(c, b.enemies.indexOf(c), b.enemies.length); };
+    for (const f of b.fx) {
+      const p = where(f.uid);
+      if (f.type === 'hit') {
+        this.floats.push({ uid: f.uid, text: String(f.amount) + (f.crit ? '!' : ''), color: f.crit ? '#ffcf5a' : '#fff', t: now });
+        this.flashes[f.uid] = now; this.poses[f.uid] = { pose: 'hurt', until: now + 350 };
+        if (p) this.burst(p.x, p.y, f.element ?? null, !!f.phys, !!f.crit, now);
+        if (f.crit) { this.shakeUntil = now + 220; this.shakeMag = 4; SFX.crit(); } else if (f.phys) SFX.hit(); else SFX.magic(f.element);
+        const tgt = b.enemies.find(e => e.uid === f.uid); if (tgt?.boss && (f.amount ?? 0) > tgt.stats.hp * 0.08) { this.shakeUntil = now + 200; this.shakeMag = Math.max(this.shakeMag, 3); }
+      }
       if (f.type === 'act') this.poses[f.uid] = { pose: (f.text as HeroPose) ?? 'attack', until: now + 600 };
-      if (f.type === 'heal') this.floats.push({ uid: f.uid, text: String(f.amount), color: '#7cf3a5', t: now });
-      if (f.type === 'miss') this.floats.push({ uid: f.uid, text: f.text ?? 'miss', color: '#9fb0e0', t: now });
-      if (f.type === 'status') this.floats.push({ uid: f.uid, text: f.text ?? '', color: '#ff8ae0', t: now });
+      if (f.type === 'heal') { this.floats.push({ uid: f.uid, text: String(f.amount), color: '#7cf3a5', t: now }); if (p) this.sparkle(p.x, p.y, '#9f9', now); SFX.heal(); }
+      if (f.type === 'miss') { this.floats.push({ uid: f.uid, text: f.text ?? 'miss', color: '#9fb0e0', t: now }); SFX.miss(); }
+      if (f.type === 'status') { this.floats.push({ uid: f.uid, text: f.text ?? '', color: '#ff8ae0', t: now }); if (p) this.sparkle(p.x, p.y, '#f8e', now); SFX.status(); }
+      if (f.type === 'capture') { if (p) this.sparkle(p.x, p.y, '#ffd', now, 24); SFX.capture(); }
+      if (f.type === 'limit') { this.shakeUntil = now + 300; this.shakeMag = 3; if (p) this.sparkle(p.x, p.y, '#ffcf5a', now, 30); SFX.limit(); }
     }
-    this.battle.fx.length = 0;
+    b.fx.length = 0;
     this.floats = this.floats.filter(f => now - f.t < 900);
+    this.particles = this.particles.filter(q => now - q.t0 < q.life);
+  }
+  private burst(x: number, y: number, el: Element | null, phys: boolean, crit: boolean, now: number) {
+    const col: Record<string, string> = { fire: '#f84', ice: '#9ef', thunder: '#ff6', water: '#6af', wind: '#9f9', earth: '#c96', holy: '#fff', dark: '#b6f', poison: '#8c4', none: '#fff' };
+    const c = col[el ?? 'none'] ?? '#fff';
+    const n = crit ? 22 : 12;
+    if (phys) {
+      this.particles.push({ x, y, vx: 0, vy: 0, t0: now, life: 220, color: crit ? '#ffcf5a' : '#fff', size: crit ? 34 : 24, kind: 'slash' });
+      for (let i = 0; i < n / 2; i++) this.particles.push({ x, y, vx: (Math.random() - 0.5) * 120, vy: (Math.random() - 0.7) * 120, t0: now, life: 350, color: el && el !== 'none' ? c : '#fff', size: 2, kind: 'spark' });
+    }
+    switch (el) {
+      case 'fire': for (let i = 0; i < n; i++) this.particles.push({ x: x + (Math.random() - 0.5) * 16, y: y + 10, vx: (Math.random() - 0.5) * 30, vy: -60 - Math.random() * 60, t0: now, life: 450, color: i % 3 ? '#f84' : '#fd4', size: 3 + Math.random() * 3, kind: 'dot' }); break;
+      case 'ice': for (let i = 0; i < n; i++) this.particles.push({ x: x + (Math.random() - 0.5) * 20, y: y - 30, vx: 0, vy: 90 + Math.random() * 60, t0: now, life: 400, color: '#cff', size: 2 + Math.random() * 2, kind: 'spark' }); this.particles.push({ x, y, vx: 0, vy: 0, t0: now, life: 400, color: '#9ef', size: 20, kind: 'ring' }); break;
+      case 'thunder': this.particles.push({ x, y, vx: 0, vy: 0, t0: now, life: 260, color: '#ff8', size: 40, kind: 'bolt' }); for (let i = 0; i < n; i++) this.particles.push({ x, y, vx: (Math.random() - 0.5) * 160, vy: (Math.random() - 0.5) * 160, t0: now, life: 250, color: '#ffc', size: 2, kind: 'spark' }); break;
+      case 'water': for (let i = 0; i < n; i++) this.particles.push({ x, y, vx: (Math.random() - 0.5) * 100, vy: -80 - Math.random() * 50, t0: now, life: 500, color: '#6af', size: 3, kind: 'dot' }); this.particles.push({ x, y, vx: 0, vy: 0, t0: now, life: 400, color: '#6af', size: 18, kind: 'ring' }); break;
+      case 'wind': for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; this.particles.push({ x: x + Math.cos(a) * 14, y: y + Math.sin(a) * 8, vx: -Math.sin(a) * 80, vy: Math.cos(a) * 40 - 30, t0: now, life: 450, color: '#bfb', size: 2, kind: 'spark' }); } break;
+      case 'earth': for (let i = 0; i < n; i++) this.particles.push({ x: x + (Math.random() - 0.5) * 24, y: y + 14, vx: (Math.random() - 0.5) * 60, vy: -90 - Math.random() * 80, t0: now, life: 500, color: i % 2 ? '#c96' : '#864', size: 3 + Math.random() * 3, kind: 'dot' }); this.shakeUntil = Math.max(this.shakeUntil, now + 180); this.shakeMag = Math.max(this.shakeMag, 3); break;
+      case 'holy': for (let i = 0; i < 6; i++) this.particles.push({ x, y, vx: 0, vy: 0, t0: now + i * 30, life: 350, color: '#fff', size: 30 + i * 6, kind: 'ray' }); this.particles.push({ x, y, vx: 0, vy: 0, t0: now, life: 450, color: '#ffd', size: 26, kind: 'ring' }); break;
+      case 'dark': for (let i = 0; i < n; i++) this.particles.push({ x: x + (Math.random() - 0.5) * 30, y: y + (Math.random() - 0.5) * 30, vx: 0, vy: -20, t0: now, life: 500, color: i % 2 ? '#b6f' : '#538', size: 4 + Math.random() * 3, kind: 'dot' }); this.particles.push({ x, y, vx: 0, vy: 0, t0: now, life: 450, color: '#b6f', size: 22, kind: 'ring' }); break;
+      case 'poison': for (let i = 0; i < n; i++) this.particles.push({ x: x + (Math.random() - 0.5) * 20, y: y + 8, vx: (Math.random() - 0.5) * 20, vy: -40 - Math.random() * 30, t0: now, life: 600, color: '#8c4', size: 3 + Math.random() * 2, kind: 'ring' }); break;
+      default: if (!phys) { this.particles.push({ x, y, vx: 0, vy: 0, t0: now, life: 350, color: '#fff', size: 22, kind: 'ring' }); for (let i = 0; i < n; i++) this.particles.push({ x, y, vx: (Math.random() - 0.5) * 140, vy: (Math.random() - 0.5) * 140, t0: now, life: 300, color: '#fff', size: 2, kind: 'spark' }); }
+    }
+  }
+  private sparkle(x: number, y: number, color: string, now: number, n = 14) {
+    for (let i = 0; i < n; i++) this.particles.push({ x: x + (Math.random() - 0.5) * 28, y: y + (Math.random() - 0.3) * 30, vx: 0, vy: -40 - Math.random() * 40, t0: now + Math.random() * 120, life: 600, color, size: 2 + Math.random() * 2, kind: 'spark' });
+  }
+  private whiteOut(sp: CanvasImageSource, x: number, y: number, w: number, h: number) {
+    const ctx = this.ctx; ctx.save(); ctx.globalAlpha = 0.85;
+    // スプライト形状の範囲だけ白く：一時キャンバス経由
+    const tmp = whiteCanvas(sp, w, h); if (tmp) ctx.drawImage(tmp, x, y); ctx.restore();
+  }
+  private drawParticles(ctx: CanvasRenderingContext2D, now: number) {
+    for (const q of this.particles) {
+      const age = (now - q.t0) / q.life; if (age < 0 || age > 1) continue;
+      const x = q.x + q.vx * age * (q.life / 1000), y = q.y + q.vy * age * (q.life / 1000);
+      ctx.globalAlpha = 1 - age; ctx.fillStyle = q.color; ctx.strokeStyle = q.color;
+      switch (q.kind) {
+        case 'dot': ctx.beginPath(); ctx.arc(x, y, q.size * (1 - age * 0.5), 0, Math.PI * 2); ctx.fill(); break;
+        case 'spark': ctx.fillRect(Math.round(x), Math.round(y), q.size, q.size); break;
+        case 'ring': ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 4 + q.size * age, 0, Math.PI * 2); ctx.stroke(); break;
+        case 'slash': { ctx.lineWidth = 3; ctx.lineCap = 'round'; const s = q.size, k = Math.min(1, age * 2.2); ctx.beginPath(); ctx.moveTo(x - s / 2, y - s / 2); ctx.lineTo(x - s / 2 + s * k, y - s / 2 + s * k); ctx.stroke(); if (age > 0.3) { ctx.globalAlpha = (1 - age) * 0.7; ctx.beginPath(); ctx.moveTo(x + s / 2, y - s / 3); ctx.lineTo(x + s / 2 - s * k, y - s / 3 + s * 0.7 * k); ctx.stroke(); } break; }
+        case 'bolt': { ctx.lineWidth = 2; ctx.beginPath(); let yy = y - q.size - 20, xx = x; ctx.moveTo(xx, yy); while (yy < y) { yy += 8; xx = x + (Math.random() - 0.5) * 14; ctx.lineTo(xx, yy); } ctx.stroke(); ctx.globalAlpha = (1 - age) * 0.5; ctx.fillRect(0, 0, 256, 224); break; }
+        case 'ray': { ctx.lineWidth = 2; for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + age; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(a) * q.size * age, y + Math.sin(a) * q.size * age); ctx.stroke(); } break; }
+      }
+    }
+    ctx.globalAlpha = 1;
   }
   pos(c: Combatant, idx: number, n: number): { x: number; y: number } {
     if (c.side === 'player') {
@@ -105,6 +168,8 @@ export class BattleView {
   draw(now: number) {
     const ctx = this.ctx, b = this.battle;
     const area = areaFor(b.opt.floor).id;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (now < this.shakeUntil) ctx.translate(Math.round((Math.random() - 0.5) * 2 * this.shakeMag), Math.round((Math.random() - 0.5) * 2 * this.shakeMag));
     const bgi = bgSprite(area);
     if (bgi) ctx.drawImage(bgi, 0, 0, 256, 224);
     else {
@@ -125,9 +190,8 @@ export class BattleView {
         let half = size / 2;
         if (sp) {
           const sw = sp.width, sh = sp.height; half = sh / 2;
-          if (flash) ctx.globalAlpha = 0.4;
           ctx.drawImage(sp, Math.round(p.x - sw / 2), Math.round(p.y - sh / 2), sw, sh);
-          ctx.globalAlpha = 1;
+          if (flash) this.whiteOut(sp, Math.round(p.x - sw / 2), Math.round(p.y - sh / 2), sw, sh);
         } else if (!enemyRegistered(e.spriteId)) {
           ctx.fillStyle = flash ? '#fff' : e.color;
           ctx.fillRect(p.x - size / 2, p.y - size / 2, size, size);
@@ -154,9 +218,8 @@ export class BattleView {
       const ps = this.poses[c.uid]; const pose: HeroPose = b.result === 'won' ? 'win' : ps && ps.until > now ? ps.pose : 'idle';
       const sp = c.kind === 'hero' ? heroSprite(c.spriteId, pose) : enemySprite(c.spriteId, false);
       if (sp) {
-        if (flash) ctx.globalAlpha = 0.4;
         if (alive && c.kind === 'ally') { const scl = Math.min(1, 40 / Math.max(sp.width, sp.height)); const w2 = sp.width * scl, h2 = sp.height * scl; ctx.save(); ctx.translate(p.x, p.y); ctx.scale(-1, 1); ctx.drawImage(sp, Math.round(-w2 / 2), Math.round(-h2 / 2), w2, h2); ctx.restore(); }
-        else if (alive) ctx.drawImage(sp, Math.round(p.x - sp.width / 2), Math.round(p.y - sp.height / 2));
+        else if (alive) { ctx.drawImage(sp, Math.round(p.x - sp.width / 2), Math.round(p.y - sp.height / 2)); if (flash) this.whiteOut(sp, Math.round(p.x - sp.width / 2), Math.round(p.y - sp.height / 2), sp.width, sp.height); }
         else { ctx.save(); ctx.translate(p.x, p.y + 10); ctx.rotate(-Math.PI / 2); ctx.globalAlpha = 0.6; ctx.drawImage(sp, -sp.width / 2, -sp.height / 2); ctx.restore(); }
         ctx.globalAlpha = 1;
       } else if (!(c.kind === 'hero' ? heroRegistered(c.spriteId) : enemyRegistered(c.spriteId))) {
@@ -166,16 +229,26 @@ export class BattleView {
       if (b.pending === c) { ctx.fillStyle = '#ffcf5a'; ctx.beginPath(); ctx.moveTo(p.x - 16, p.y - 4); ctx.lineTo(p.x - 10, p.y); ctx.lineTo(p.x - 16, p.y + 4); ctx.fill(); }
       ctx.fillStyle = '#fff'; ctx.fillText(c.name, p.x, p.y + (sp ? sp.height / 2 : hh / 2) + 10);
     });
+    this.drawParticles(ctx, now);
     for (const f of this.floats) {
       const all = [...b.players, ...b.enemies];
       const idx = b.players.findIndex(x => x.uid === f.uid);
       const c = all.find(x => x.uid === f.uid); if (!c) continue;
       const p = idx >= 0 ? this.pos(c, idx, b.players.length) : this.pos(c, b.enemies.indexOf(c), b.enemies.length);
       const age = (now - f.t) / 900;
-      ctx.fillStyle = f.color; ctx.font = 'bold 11px monospace';
-      ctx.fillText(f.text, p.x, p.y - 10 - age * 18);
+      const pop = age < 0.15 ? 1 + (0.15 - age) * 4 : 1;
+      const big = f.color === '#ffcf5a';
+      ctx.font = `bold ${Math.round((big ? 15 : 12) * pop)}px monospace`;
+      ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.lineJoin = 'round';
+      const yy = p.y - 12 - Math.min(age, 0.6) * 24 + (age > 0.6 ? 0 : 0);
+      ctx.strokeText(f.text, p.x, yy); ctx.fillStyle = f.color; ctx.fillText(f.text, p.x, yy);
       ctx.font = '9px monospace';
     }
+    if (b.result === 'won') {
+      if (!this.victoryAt) { this.victoryAt = now; SFX.victory(); }
+      const a = Math.min(1, (now - this.victoryAt) / 400);
+      ctx.globalAlpha = a; ctx.font = 'bold 22px monospace'; ctx.lineWidth = 4; ctx.strokeStyle = '#000'; ctx.strokeText('VICTORY', 128, 40 + (1 - a) * 10); ctx.fillStyle = '#ffcf5a'; ctx.fillText('VICTORY', 128, 40 + (1 - a) * 10); ctx.globalAlpha = 1; ctx.font = '9px monospace';
+    } else if (b.result === 'lost' && !this.victoryAt) { this.victoryAt = now; SFX.defeat(); }
     if (b.pending && !this.auto) { ctx.fillStyle = '#ffcf5a'; ctx.textAlign = 'left'; ctx.fillText(`${b.pending.name} のコマンド`, 4, 10); ctx.textAlign = 'center'; }
   }
   renderParty() {
@@ -252,4 +325,11 @@ export class BattleView {
     this.menu = { level: 'root' };
     this.renderCommands();
   }
+}
+
+const _wc = document.createElement('canvas');
+function whiteCanvas(sp: CanvasImageSource, w: number, h: number): HTMLCanvasElement | null {
+  _wc.width = w; _wc.height = h; const c = _wc.getContext('2d'); if (!c) return null;
+  c.clearRect(0, 0, w, h); c.drawImage(sp, 0, 0, w, h); c.globalCompositeOperation = 'source-in'; c.fillStyle = '#fff'; c.fillRect(0, 0, w, h); c.globalCompositeOperation = 'source-over';
+  return _wc;
 }

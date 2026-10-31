@@ -55,7 +55,7 @@ export const VARIANTS: VariantDef[] = [
 {
 "base": "pudding",
 "id": "yellow_jelly",
-"name": "イエロージェリー",
+"name": "ブルージェリー",
 "skill": "thunder_breath",
 "resist": {
 "thunder": -1,
@@ -64,7 +64,7 @@ export const VARIANTS: VariantDef[] = [
 "mult": {
 "mag": 1.3
 },
-"hue": 300
+"hue": 200
 },
 {
 "base": "sahagin",

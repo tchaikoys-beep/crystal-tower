@@ -11,7 +11,7 @@ import { ITEMS } from '../data/items';
 import { areaElement } from '../data/monsters';
 
 export interface LogEntry { text: string; kind: 'info' | 'dmg' | 'heal' | 'bad' | 'good' | 'law' | 'sys' }
-export interface Fx { type: 'hit' | 'heal' | 'miss' | 'status' | 'act'; uid: string; amount?: number; text?: string; crit?: boolean }
+export interface Fx { type: 'hit' | 'heal' | 'miss' | 'status' | 'act' | 'capture' | 'limit'; uid: string; amount?: number; text?: string; crit?: boolean; element?: Element; phys?: boolean }
 export interface BattleOptions {
   floor: number;
   law: LawDef | null;
@@ -153,7 +153,7 @@ export class Battle {
       c.mp -= mpCost;
     }
     if (skill.effect !== 'defend' && skill.effect !== 'flee') this.fx.push({ type: 'act', uid: c.uid, text: skill.kind === 'spell' || skill.effect === 'magic' || skill.effect === 'heal' ? 'cast' : 'attack' });
-    if (skill.kind === 'limit') { c.limit = 0; this.say(`${c.name}のリミット技「${skill.name}」！`, 'good'); }
+    if (skill.kind === 'limit') { c.limit = 0; this.say(`${c.name}のリミット技「${skill.name}」！`, 'good'); this.fx.push({ type: 'limit', uid: c.uid, text: skill.name }); }
     const targets = this.resolveTargets(c, skill, action.targetUid);
     if (c.kind === 'hero') { if (skill.kind === 'spell') this.uses.push({ uid: c.uid, kind: 'spell', key: skill.id }); else if (skill.effect === 'phys') this.uses.push({ uid: c.uid, kind: 'weapon', key: c.weaponType ?? 'fist' }); }
     if (skill.effect !== 'defend' && skill.effect !== 'flee' && skill.effect !== 'focus') this.say(`${c.name}の${skill.name}`);
@@ -242,7 +242,7 @@ export class Battle {
       const em = elementMultiplier(t, el);
       if (em > 1) this.lawFavored = this.lawFavored || this.opt.law?.favor === 'weak';
       if (el && el !== 'none') d = Math.round(d * (1 + (c.mods.elementDmg[el] ?? 0)));
-      this.dealElemental(c, t, d, em, crit);
+      this.dealElemental(c, t, d, em, crit, el, true);
       if (c.mods.vamp > 0 && d > 0) this.heal(c, Math.round(d * c.mods.vamp));
       for (const inf of c.mods.inflict) if (isAlive(t)) this.inflict(c, t, inf.status, inf.chance, null, true);
       if (skill.id === 'mug') this.steal(c, t, skill);
@@ -250,7 +250,7 @@ export class Battle {
       if (isAlive(t) && t.supports.has('counter') && this.rng.chance(0.5) && skill.effect === 'phys' && c.side !== t.side) {
         this.say(`${t.name}のカウンター！`, 'good');
         const d2 = physDamage(t.atk, t.stats.str, c.def, 1, this.rng.range(0.9, 1.1));
-        this.dealElemental(t, c, this.applyDefMods(c, d2, 'phys'), elementMultiplier(c, t.weaponElement), false);
+        this.dealElemental(t, c, this.applyDefMods(c, d2, 'phys'), elementMultiplier(c, t.weaponElement), false, t.weaponElement, true);
       }
     }
     c.focus = 1;
@@ -263,13 +263,13 @@ export class Battle {
     if (el !== 'none') d = Math.round(d * (1 + (c.mods.elementDmg[el] ?? 0)));
     const em = elementMultiplier(t, el);
     if (em > 1) this.lawFavored = this.lawFavored || this.opt.law?.favor === 'weak';
-    const dealt = this.dealElemental(c, t, d, em, false);
+    const dealt = this.dealElemental(c, t, d, em, false, el, false);
     if (skill.status && isAlive(t)) this.inflict(c, t, skill.status, skill.chance ?? 0.3, null, true);
     return dealt;
   }
   private damageHit(c: Combatant, t: Combatant, d: number, el: Element, ignoreDef: boolean) {
     const em = elementMultiplier(t, el);
-    this.dealElemental(c, t, ignoreDef ? d : this.applyDefMods(t, d, 'phys'), em, false);
+    this.dealElemental(c, t, ignoreDef ? d : this.applyDefMods(t, d, 'phys'), em, false, el, false);
   }
   private applyDefMods(t: Combatant, d: number, kind: 'phys' | 'magic'): number {
     if (t.defending >= 1) return 0;
@@ -281,12 +281,12 @@ export class Battle {
     return Math.round(d);
   }
   /** 属性倍率を適用して与える。吸収は回復。戻り値は与えたダメージ */
-  private dealElemental(c: Combatant, t: Combatant, d: number, em: number, crit: boolean): number {
+  private dealElemental(c: Combatant, t: Combatant, d: number, em: number, crit: boolean, el: Element | null = null, phys = true): number {
     if (em < 0) { const h = Math.round(d); this.heal(t, h); this.say(`${t.name}は${h}吸収した`, 'bad'); return 0; }
     if (em === 0) { this.say(`${t.name}には効かない`); this.fx.push({ type: 'miss', uid: t.uid, text: '無効' }); return 0; }
     d = Math.round(d * em);
     this.damage(t, d, 'hit');
-    this.fx.push({ type: 'hit', uid: t.uid, amount: d, crit });
+    this.fx.push({ type: 'hit', uid: t.uid, amount: d, crit, element: el ?? undefined, phys });
     this.say(`${t.name}に${d}のダメージ${crit ? '（会心）' : ''}${em > 1 ? '（弱点）' : em < 1 ? '（半減）' : ''}`, 'dmg');
     if (!isAlive(t)) { c.kills++; this.say(`${t.name}を倒した`, 'good'); }
     return d;
@@ -339,7 +339,8 @@ export class Battle {
     const statusBonus = (t.statuses.sleep || t.statuses.paralyze) ? 1.5 : 1;
     const p = captureChance(t.captureRate, t.hp / t.stats.hp, statusBonus, c.mods.capture);
     if (this.rng.chance(p)) {
-      t.captured = true; this.captured.push(t);
+      t.captured = true;
+      this.fx.push({ type: 'capture', uid: t.uid }); this.captured.push(t);
       this.say(`${t.name}を捕まえた！`, 'good');
       if (this.opt.law?.favor === 'capture') this.lawFavored = true;
     } else this.say(`${t.name}は暴れて逃れた（${Math.round(p * 100)}%）`);

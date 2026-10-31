@@ -1,5 +1,6 @@
 // 画面遷移とメニュー類
 import { h, btn, bar, toast, selectEl, type Child } from './dom';
+import { SFX, installUiSounds, setSfxEnabled } from './sfx';
 import { BattleView } from './battleView';
 import { synthScreen } from './synth';
 import { masteryLevel, masteryNext, MAX_MASTERY } from '../core/formulas';
@@ -48,11 +49,24 @@ export class App {
   rebirthSel = { blessing: 'fire', trials: [] as string[], start: 1 };
   partyDraft: { party: string[]; reserve: string[] } | null = null;
 
-  constructor(root: HTMLElement) { this.root = root; this.render(); }
+  constructor(root: HTMLElement) {
+    this.root = root; this.render();
+    installUiSounds(root);
+    // PC：キーボード操作。Enter＝主要アクション、Esc＝戻る、1〜9＝ドックのボタン、Tab系はブラウザ既定
+    window.addEventListener('keydown', e => {
+      if ((e.target as HTMLElement)?.tagName === 'TEXTAREA' || (e.target as HTMLElement)?.tagName === 'SELECT' || (e.target as HTMLElement)?.tagName === 'INPUT') return;
+      const sheet = this.root.querySelector('.sheet .dock-actions') as HTMLElement | null;
+      const dock = sheet ?? (this.root.querySelector('.dock .dock-actions') as HTMLElement | null); if (!dock) return;
+      const btns = [...dock.querySelectorAll('button')].filter(b => !b.disabled) as HTMLButtonElement[];
+      if (e.key === 'Enter') { const pr = btns.find(b => b.classList.contains('primary')) ?? btns[0]; if (pr && !pr.classList.contains('back')) { pr.click(); e.preventDefault(); } }
+      else if (e.key === 'Escape') { const back = btns.find(b => b.classList.contains('back')); if (back) { back.click(); e.preventDefault(); } }
+      else if (/^[1-9]$/.test(e.key)) { const i = Number(e.key) - 1; const list = btns.filter(b => !b.classList.contains('back')); if (list[i]) { list[i].click(); e.preventDefault(); } }
+    });
+  }
   go(sc: Screen) { this.screen = sc; this.render(); }
   autosave() { if (this.s) save(this.s); }
   render() {
-    if (this.s) this.root.classList.toggle('hand-left', this.s.settings.hand === 'left');
+    if (this.s) { this.root.classList.toggle('hand-left', this.s.settings.hand === 'left'); setSfxEnabled(this.s.settings.sfx !== false); }
     if (this.view) { this.view.destroy(); this.view = null; }
     this.root.replaceChildren();
     if (this.screen !== 'battle') this.autosave();
@@ -201,6 +215,8 @@ export class App {
     const s = this.s!;
     const b = this.battle!, ev = this.battleEvent!;
     const sum = G.finishBattle(s, b, ev);
+    if (sum.lines.some(l => /Lv\d+になった|習得した|覚えた/.test(l))) setTimeout(() => SFX.levelup(), 400);
+    if (sum.lines.some(l => /手に入れた/.test(l))) setTimeout(() => SFX.treasure(), 900);
     this.battle = null; this.battleEvent = null;
     if (this.view) { this.view.destroy(); this.view = null; }
     this.autosave();
@@ -599,7 +615,8 @@ export class App {
           return h('div', { style: 'font-size:12px;margin-top:4px' }, h('b', {}, `捕獲記録：${ids.length}種（4等級コンプリート ${complete}種）`), h('div', { class: 'dim', style: 'font-size:11px' }, ids.length ? ids.map(id => `${MONSTERS[id]?.name ?? id}[${mark(id)}]`).join('、') : '捕獲した種族と等級（無印／＋／●／●＋）がここに残る')); })(),
         h('div', { class: 'dim', style: 'font-size:12px' }, '遭遇：' + s.codex.monsters.map(m => MONSTERS[m]?.name ?? m).join('、'))),
       h('div', { class: 'win' }, h('h2', {}, 'セーブ書き出し'), h('div', { class: 'dim', style: 'font-size:12px' }, '端末を跨ぐときはこの文字列をコピーして、タイトル画面で読み込む。'), ta, btn('コピー', () => { navigator.clipboard?.writeText(ta.value).then(() => toast('コピーした')); }, 'small')),
-      h('div', { class: 'win' }, h('h2', {}, '設定'), h('div', { class: 'row' }, h('span', { class: 'dim' }, '操作する手：'), btn('右手（ボタンは右寄せ）', () => { s.settings.hand = 'right'; this.render(); }, 'small' + (s.settings.hand === 'right' ? ' sel' : '')), btn('左手', () => { s.settings.hand = 'left'; this.render(); }, 'small' + (s.settings.hand === 'left' ? ' sel' : '')))),
+      h('div', { class: 'win' }, h('h2', {}, '設定'), h('div', { class: 'row' }, h('span', { class: 'dim' }, '操作する手：'), btn('右手（ボタンは右寄せ）', () => { s.settings.hand = 'right'; this.render(); }, 'small' + (s.settings.hand === 'right' ? ' sel' : '')), btn('左手', () => { s.settings.hand = 'left'; this.render(); }, 'small' + (s.settings.hand === 'left' ? ' sel' : ''))),
+        h('div', { class: 'row', style: 'margin-top:6px' }, h('span', { class: 'dim' }, '効果音：'), btn(s.settings.sfx !== false ? 'ON' : 'OFF', () => { s.settings.sfx = !(s.settings.sfx !== false); setSfxEnabled(s.settings.sfx); this.render(); }, 'small' + (s.settings.sfx !== false ? ' sel' : '')), h('span', { class: 'dim', style: 'font-size:11px' }, 'チップチューン風の合成音。PCはEnter＝決定、Esc＝戻る、1〜9＝ドックのボタン'))),
       h('div', { class: 'win' }, btn('データを消して最初から', () => { if (confirm('本当に消す？')) { clear(); this.s = null; this.go('title'); } }, 'small'))] });
   }
 }
