@@ -18,7 +18,7 @@ describe('データ整合性', () => {
   it('階が連続している', () => {
     let f = 1;
     for (const a of AREAS) { expect(a.floors[0]).toBe(f); f = a.floors[1] + 1; }
-    expect(f).toBe(1001);
+    expect(f).toBe(AREAS.length * 100 + 1);  // エリア数×100階
   });
   it('敵の技・素材・進化先が存在する', () => {
     for (const m of Object.values(MONSTERS)) {

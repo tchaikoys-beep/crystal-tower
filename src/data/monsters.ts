@@ -151,6 +151,9 @@ export function monster(id: string): MonsterDef { const m = MONSTERS[id]; if (!m
 import { BATCH7 } from './batch7';
 for (const n of BATCH7) MONSTERS[n.id] = { id: n.id, name: n.name, family: n.family, role: n.role as MonsterDef['role'], mult: n.mult as MonsterDef['mult'], skills: n.skills, captureRate: n.captureRate, color: n.color, material: n.material, ...(n.resist ? { resist: n.resist as MonsterDef['resist'] } : {}) };
 
+// ---- エリア11〜16（1001〜2000階）：art/batch10_data.py で生成
+import { MONSTERS2, AREAS2 } from './areas2';
+for (const n of MONSTERS2) MONSTERS[n.id] = { id: n.id, name: n.name, family: n.family, role: n.role, mult: n.mult, skills: n.skills, captureRate: n.captureRate, color: n.color, material: n.material, ...(n.resist ? { resist: n.resist } : {}), ...(n.boss ? { boss: true } : {}) } as MonsterDef;
 // ---- 色違い・上位種（art/variants.py で生成。基礎種より一回り強く、技が1つ多い）
 import { VARIANTS } from './variants';
 for (const v of VARIANTS) {
@@ -256,6 +259,7 @@ function expandBands(area: AreaDef): void {
   area.subs = starts.map((st, k) => ({ floors: [f0 + k * len, k === 3 ? area.floors[1] : f0 + (k + 1) * len - 1] as [number, number], pool: seq.slice(st, st + win) }));
 }
 import { ITEMS2 } from './items2';
+for (const a2 of AREAS2) { const pool = [...new Set([...AREAS[8].itemPool, ...AREAS[9].itemPool])]; AREAS.push({ ...a2, itemPool: pool } as AreaDef); }
 for (const a of AREAS) {
   for (const it of ITEMS2) if ((it.area === a.id || it.area === a.id - 1) && !a.itemPool.includes(it.id)) a.itemPool.push(it.id);
   const mine = BATCH7.filter(n => n.area === a.id);
