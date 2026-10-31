@@ -154,6 +154,13 @@ for (const n of BATCH7) MONSTERS[n.id] = { id: n.id, name: n.name, family: n.fam
 // ---- エリア11〜16（1001〜2000階）：art/batch10_data.py で生成
 import { MONSTERS2, AREAS2 } from './areas2';
 for (const n of MONSTERS2) MONSTERS[n.id] = { id: n.id, name: n.name, family: n.family, role: n.role, mult: n.mult, skills: n.skills, captureRate: n.captureRate, color: n.color, material: n.material, ...(n.resist ? { resist: n.resist } : {}), ...(n.boss ? { boss: true } : {}) } as MonsterDef;
+// ---- 裏巡エリア17〜20（1601〜2000階）：art/areas3_data.py で生成。再臨ボスは元ボスの強化版
+import { MONSTERS3, AREAS3 } from './areas3';
+for (const n of MONSTERS3) {
+  if (n.base) { const b = MONSTERS[n.base]; const mult: MonsterDef['mult'] = { ...b.mult }; for (const [k, f] of Object.entries(n.exMult as Record<string, number>)) (mult as any)[k] = Math.round(((mult as any)[k] ?? 1) * f * 100) / 100;
+    MONSTERS[n.id] = { ...b, id: n.id, name: b.name + '（再臨）', mult, skills: [...b.skills, 'ultima_blast'].filter((x, i, a) => a.indexOf(x) === i), captureRate: 0, boss: true }; }
+  else MONSTERS[n.id] = { id: n.id, name: n.name, family: n.family, role: n.role, mult: n.mult, skills: n.skills, captureRate: 0, color: n.color, material: 'orichalcum', resist: n.resist, boss: true } as MonsterDef;
+}
 // ---- 色違い・上位種（art/variants.py で生成。基礎種より一回り強く、技が1つ多い）
 import { VARIANTS } from './variants';
 for (const v of VARIANTS) {
@@ -260,6 +267,8 @@ function expandBands(area: AreaDef): void {
 }
 import { ITEMS2 } from './items2';
 for (const a2 of AREAS2) { const pool = a2.id === 11 ? [...new Set([...AREAS[9].itemPool])] : []; AREAS.push({ ...a2, itemPool: pool } as AreaDef); }
+// 裏巡：装備はエリア13〜16の品（ITEMS2 の area 13〜16 を後で足す）
+for (const a3 of AREAS3) AREAS.push({ ...a3, itemPool: ITEMS2.filter(i => i.area >= 13).map(i => i.id) } as AreaDef);
 for (const a of AREAS) {
   for (const it of ITEMS2) if ((it.area === a.id || it.area === a.id - 1) && !a.itemPool.includes(it.id)) a.itemPool.push(it.id);
   const mine = BATCH7.filter(n => n.area === a.id);

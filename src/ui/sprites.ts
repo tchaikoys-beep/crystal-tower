@@ -14,10 +14,12 @@ export function registered(name: string) { return has.has(name); }
 export function heroSprite(id: string, pose: HeroPose = 'idle') { return load(`hero_${id}_${pose}`) ?? load(`hero_${id}_idle`); }
 export function heroRegistered(id: string) { return has.has(`hero_${id}_idle`); }
 export function enemyRegistered(id0: string) { const id = ALIAS[id0] ?? id0; return has.has(`enemy_${id}`) || has.has(`boss_${id}`); }
-const ALIAS: Record<string, string> = { titan_boss: 'titan' };
+import { SPRITE_ALIAS } from '../data/areas3';
+const ALIAS: Record<string, string> = { titan_boss: 'titan', ...SPRITE_ALIAS };
 export function enemySprite(id0: string, boss: boolean) { const id = ALIAS[id0] ?? id0; return (boss ? load(`boss_${id}`) : null) ?? load(`enemy_${id}`) ?? load(`boss_${id}`); }
 export function faceSprite(id: string) { return load(`face_${id}`); }
-export function bgSprite(area: number) { return load(`bg_area${area}`); }
+const BG_OF: Record<number, number> = { 17: 1, 18: 5, 19: 9, 20: 16 };
+export function bgSprite(area: number) { return load(`bg_area${BG_OF[area] ?? area}`); }
 export function iconName(itemId: string): string | null {
   if (has.has('icon_' + itemId)) return 'icon_' + itemId;
   const b = ITEMS[itemId]; if (!b) return null;
