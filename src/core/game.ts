@@ -405,7 +405,7 @@ export function finishBattle(s: GameState, b: Battle, ev: FloorEvent): BattleSum
   }
   for (const e of b.enemies) if (!s.codex.monsters.includes(e.ref)) s.codex.monsters.push(e.ref);
   // 熟練度（FF2式）：使った回数×階層補正
-  const mg = masteryGain(scale, Math.max(s.maxFloorEver, 1000 + s.maxDepthEver * 2));
+  const mg = masteryGain(scale, Math.max(s.maxFloorEver, 1000 + s.maxDepthEver * 2)) * (1 + boardValue(s, 'mastery_pct'));
   for (const u of b.uses) {
     const hs = s.heroes[u.uid.slice(2)]; if (!hs) continue;
     hs.mastery ??= {}; hs.spellMastery ??= {};
@@ -518,12 +518,13 @@ export function learnMonsterSkills(s: GameState, m: MonsterAlly, prefix = ''): s
   for (const e of learnsetFor(def, VARIANT_OF[m.id])) {
     if (e.lv > m.level || m.learned.includes(e.skill) || def.skills.includes(e.skill)) continue;
     m.learned.push(e.skill);
-    if (m.moves && m.moves.length < MAX_MOVES) m.moves.push(e.skill);
-    lines.push(`${def.name}は${prefix}「${SKILLS[e.skill].name}」を覚えた！${m.moves && m.moves.length >= MAX_MOVES && !m.moves.includes(e.skill) ? '（技枠がいっぱい。牧場で入れ替え）' : ''}`);
+    if (m.moves && m.moves.length < maxMoves(s)) m.moves.push(e.skill);
+    lines.push(`${def.name}は${prefix}「${SKILLS[e.skill].name}」を覚えた！${m.moves && m.moves.length >= maxMoves(s) && !m.moves.includes(e.skill) ? '（技枠がいっぱい。牧場で入れ替え）' : ''}`);
   }
   return lines;
 }
 export const MAX_MOVES = 4;
+export function maxMoves(s: GameState): number { return MAX_MOVES + boardValue(s, 'moves'); }
 /** 使える技すべて：固有技（絆で解放）＋覚えた技 */
 export function knownSkills(m: MonsterAlly): string[] {
   const def = MONSTERS[m.id];
@@ -531,15 +532,15 @@ export function knownSkills(m: MonsterAlly): string[] {
   return [...innate, ...(m.learned ?? []).filter(k => !innate.includes(k) && SKILLS[k])];
 }
 /** 戦闘でセットされる技（最大4）。未設定なら固有技→覚えた順で自動 */
-export function activeMoves(m: MonsterAlly): string[] {
+export function activeMoves(m: MonsterAlly, cap = MAX_MOVES): string[] {
   const known = knownSkills(m);
-  if (m.moves) return m.moves.filter(k => known.includes(k)).slice(0, MAX_MOVES);
-  return known.slice(0, MAX_MOVES);
+  if (m.moves) return m.moves.filter(k => known.includes(k)).slice(0, cap);
+  return known.slice(0, cap);
 }
 export function setMoves(s: GameState, uid: string, moves: string[]): string | null {
   const m = s.monsters.find(x => x.uid === uid); if (!m) return 'ない';
   const known = knownSkills(m);
-  const mv = moves.filter((k, i, a) => known.includes(k) && a.indexOf(k) === i).slice(0, MAX_MOVES);
+  const mv = moves.filter((k, i, a) => known.includes(k) && a.indexOf(k) === i).slice(0, maxMoves(s));
   if (!mv.length) return '技は1つ以上必要';
   m.moves = mv; return null;
 }
@@ -551,7 +552,7 @@ export function autoModeOf(s: GameState, c: { kind: string; ref: string }): Auto
 export function setAutoMode(s: GameState, key: string, mode: AutoMode): void { (s.autoModes ??= {})[key] = mode; }
 export function createMonsterAlly(s: GameState, id: string, level: number, rareMult = 1, plus = false): MonsterAlly {
   const rng = rngOf(s);
-  const rare = rng.chance(0.01 * (s.rebirths >= 2 ? 2 : 1) * rareMult);
+  const rare = rng.chance((0.01 * (s.rebirths >= 2 ? 2 : 1) + boardValue(s, 'rare_mon')) * rareMult);
   const iv: Stats = { hp: 1, mp: 1, str: 1, vit: 1, mag: 1, spr: 1, spd: 1, luck: 1 };
   for (const k of STAT_KEYS) iv[k] = Math.round(rng.range(0.9, 1.1) * 100) / 100;
   const natures = ['勇敢', '慎重', '狡猾', '穏やか', '好奇心', '気まぐれ'];
@@ -702,6 +703,9 @@ export function superBossAvailable(s: GameState, id: string): { ok: boolean; rea
     case 'omega': return s.maxFloorEver >= 1000 ? { ok: true } : { ok: false, reason: '1000階到達で挑戦可' };
     case 'ultima_weapon_true': return s.rebirths >= 10 ? { ok: true } : { ok: false, reason: '転生10回で挑戦可' };
     case 'shinryu': return s.maxDepthEver >= 100 ? { ok: true } : { ok: false, reason: '裏タワー地下100階到達で挑戦可' };
+    case 'gilgamesh_true': return s.maxFloorEver >= 2000 ? { ok: true } : { ok: false, reason: '2000階到達で挑戦可' };
+    case 'proto_bahamut': return s.rebirths >= 20 ? { ok: true } : { ok: false, reason: '転生20回で挑戦可' };
+    case 'penance': return s.maxDepthEver >= 200 ? { ok: true } : { ok: false, reason: '裏タワー地下200階到達で挑戦可' };
   }
   return { ok: false, reason: '?' };
 }
@@ -713,7 +717,7 @@ export function superBossReward(s: GameState, id: string): string[] {
   const lines: string[] = [];
   s.superBosses[id] = (s.superBosses[id] ?? 0) + 1;
   const first = s.superBosses[id] === 1;
-  const tp = { omega: 100, ultima_weapon_true: 150, shinryu: 200 }[id] ?? 50;
+  const tp = { omega: 100, ultima_weapon_true: 150, shinryu: 200, gilgamesh_true: 300, proto_bahamut: 400, penance: 500 }[id] ?? 50;
   s.tp += first ? tp : Math.round(tp / 4);
   lines.push(`超ボス撃破！ TP+${first ? tp : Math.round(tp / 4)}`);
   const rng = rngOf(s); const area = areaFor(1000);
@@ -725,6 +729,7 @@ export function superBossReward(s: GameState, id: string): string[] {
   if (smn && !(s.summons ??= []).includes(smn)) { s.summons.push(smn); lines.push(`★ 召喚獣「${SKILLS[smn].name.replace('召喚：', '')}」が仲間になった！召喚士の「召喚」で使える`); }
   else if (idx < 0 && n < 5) lines.push(`次の召喚獣は撃破${n < 3 ? 3 : 5}回目`);
   if (id === 'omega' && first) lines.push('裏タワー（地下）が解放された！拠点から降りられる');
+  if (first && (id === 'gilgamesh_true' || id === 'proto_bahamut' || id === 'penance')) lines.push(`★ 転生ボード第2面・${id === 'gilgamesh_true' ? 'I' : id === 'proto_bahamut' ? 'II' : 'III'} が解放された！祭壇の転生ボードで買える`);
   if (id === 'shinryu' && first) lines.push('転生ボードの上限が+10された');
   return lines;
 }

@@ -136,6 +136,9 @@ add(
 export const SUPER_BOSSES: { id: string; name: string; scale: number; cond: string; rewardText: string }[] = [
   { id: 'omega', name: 'オメガ', scale: 1000, cond: '1000階到達', rewardText: 'アルテマ装備確定＋TP100＋裏タワー解放。召喚獣：アレクサンダー（1回目）／フェンリル（3回目）／アーク（5回目）' },
   { id: 'ultima_weapon_true', name: 'アルテマウェポン（真）', scale: 1300, cond: '転生10回', rewardText: 'アルテマ装備確定＋TP150。召喚獣：ディアボロス（1回目）／シルドラ（3回目）／ナイツオブラウンド（5回目）' },
+  { id: 'gilgamesh_true', name: 'ギルガメッシュ（真）', scale: 2200, cond: '2000階到達', rewardText: 'アルテマ装備確定＋TP300。初回：転生ボード第2面・I 解放' },
+  { id: 'proto_bahamut', name: 'プロトバハムート', scale: 2600, cond: '転生20回', rewardText: 'アルテマ装備確定＋TP400。初回：転生ボード第2面・II 解放' },
+  { id: 'penance', name: 'ペナンス', scale: 3000, cond: '裏タワー地下200階到達', rewardText: 'アルテマ装備確定＋TP500。初回：転生ボード第2面・III 解放' },
   { id: 'shinryu', name: '神竜', scale: 1600, cond: '裏タワー地下100階到達', rewardText: 'アルテマ装備確定＋TP200＋転生ボードの全上限+10。召喚獣：カトブレパス（1回目）／ハーデス（3回目）／クルセイダー（5回目）' },
 ];
 export function chaosPool(): string[] {
@@ -151,6 +154,12 @@ export function monster(id: string): MonsterDef { const m = MONSTERS[id]; if (!m
 import { BATCH7 } from './batch7';
 for (const n of BATCH7) MONSTERS[n.id] = { id: n.id, name: n.name, family: n.family, role: n.role as MonsterDef['role'], mult: n.mult as MonsterDef['mult'], skills: n.skills, captureRate: n.captureRate, color: n.color, material: n.material, ...(n.resist ? { resist: n.resist as MonsterDef['resist'] } : {}) };
 
+// ---- 追加超ボス（転生ボード第2面の鍵）
+add(
+  M('gilgamesh_true', 'ギルガメッシュ（真）', 'boss', 'attacker', { hp: 40, str: 2.6, vit: 2.0, mag: 2.0, spr: 1.8, spd: 1.5 }, ['brave_slash_m', 'quake_stomp', 'blaster', 'ultima_blast'], 0, '#c84', { boss: true, resist: { holy: 0.5, dark: 0.5 }, material: 'orichalcum' }),
+  M('proto_bahamut', 'プロトバハムート', 'boss', 'attacker', { hp: 48, str: 2.6, vit: 2.1, mag: 2.8, spr: 2.0, spd: 1.5 }, ['megaflare', 'dark_flare', 'gravija', 'ultima_blast'], 0, '#a44', { boss: true, resist: { dark: 0.5, fire: 0.5 }, material: 'orichalcum' }),
+  M('penance', 'ペナンス', 'boss', 'jammer', { hp: 56, str: 2.4, vit: 2.4, mag: 3.0, spr: 2.4, spd: 1.4 }, ['heartless_angel', 'ultima_blast', 'gravija', 'holy_light', 'curse'], 0, '#dcd', { boss: true, resist: { holy: 0.5, dark: 0.5, fire: 0.5, ice: 0.5, thunder: 0.5 }, material: 'orichalcum' }),
+);
 // ---- エリア11〜16（1001〜2000階）：art/batch10_data.py で生成
 import { MONSTERS2, AREAS2 } from './areas2';
 for (const n of MONSTERS2) MONSTERS[n.id] = { id: n.id, name: n.name, family: n.family, role: n.role, mult: n.mult, skills: n.skills, captureRate: n.captureRate, color: n.color, material: n.material, ...(n.resist ? { resist: n.resist } : {}), ...(n.boss ? { boss: true } : {}) } as MonsterDef;

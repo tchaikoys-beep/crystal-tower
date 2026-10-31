@@ -346,7 +346,7 @@ export function buildAlly(s: GameState, m: MonsterAlly): Combatant {
   const commands: Command[] = [{ id: 'attack', name: 'たたかう', skill: SKILLS.attack, group: 'basic' }];
   const innate = def.skills.filter((_, i) => i === 0 || m.bond >= 3 * (i + 1));
   const known = [...innate, ...(m.learned ?? []).filter(k => !innate.includes(k) && SKILLS[k])];
-  const unlocked = (m.moves ? m.moves.filter(k => known.includes(k)) : known).slice(0, 4);
+  const unlocked = (m.moves ? m.moves.filter(k => known.includes(k)) : known).slice(0, 4 + boardValue(s, 'moves'));
   for (const sk of unlocked) {
     const base = SKILLS[sk];
     const costed: Skill = { ...base, mp: Math.max(base.mp, base.effect === 'fixed' ? 20 : 8) };

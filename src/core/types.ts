@@ -175,7 +175,9 @@ export interface LawDef { id: string; forbid: LawTag; favor: LawTag; name: strin
 export interface BoardNode {
   id: string;
   name: string;
-  cat: '基礎' | '成長' | '周回' | '収集' | '戦闘' | '解放';
+  cat: '基礎' | '成長' | '周回' | '収集' | '戦闘' | '解放' | '第2面・I' | '第2面・II' | '第2面・III';
+  req?: string;            // 解放に必要な超ボスid（第2面）
+  root?: boolean;          // 隣接なしで買える起点
   effect: { tag: string; value: number };
   cost: number;
   max: number;             // 重ね買い上限
